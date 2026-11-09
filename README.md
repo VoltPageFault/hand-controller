@@ -133,3 +133,5 @@ pytest
 - **Claude** (Anthropic): sviluppo del codice insieme a Volt, con Claude Code.
 
 Hand Controller è disponibile su [pagefault.it](https://pagefault.it).
+
+© 2026 Volt. Tutti i diritti riservati.
