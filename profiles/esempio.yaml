@@ -1,0 +1,25 @@
+# Profilo di esempio: contiene solo le chiavi da sovrascrivere rispetto al default.
+# Uso:  hand-controller --config profiles/esempio.yaml
+
+camera:
+  index: 0
+
+mouse:
+  hand: any
+  active_region: [0.20, 0.15, 0.80, 0.70]
+
+auto_switch:
+  game_processes:
+    - witcher3.exe
+    - diablo iv.exe
+    - rdr2.exe
+
+gamepad:
+  stick:
+    radius: 0.7
+  right_hand:
+    pinch:
+      index: A
+      middle: B
+      ring: X
+      pinky: RB

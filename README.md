@@ -1,0 +1,82 @@
+# Hand Controller
+
+Usa il PC con le mani davanti alla webcam: **mouse virtuale** sul desktop per avviare i giochi,
+**controller Xbox virtuale** dentro i giochi. Il passaggio tra le due modalità può essere
+automatico (in base al gioco in primo piano), con un gesto o con un tasto.
+
+## Architettura
+
+```
+webcam ─► capture (thread) ─► tracker (MediaPipe, 21 punti/mano) ─► One Euro filter
+      ─► gestures (pinch, pugno, corna) ─► mouse_mode | gamepad_mode ─► backends
+```
+
+Tutta la logica è indipendente dalla piattaforma; solo `backends/` e `desktop/` contengono codice
+specifico per sistema operativo:
+
+| Funzione | Windows | Linux | macOS |
+|---|---|---|---|
+| Mouse virtuale | pynput | pynput (X11) | pynput |
+| Controller Xbox | vgamepad (ViGEmBus) | uinput (evdev) | — (non supportato) |
+| Rilevamento gioco in primo piano | Win32 API | xdotool (X11) | osascript |
+
+Per portare il progetto su un nuovo sistema basta aggiungere un backend che implementa
+`GamepadBackend` / `MouseBackend` (vedi `backends/base.py`).
+
+## Installazione
+
+Richiede Python 3.9–3.12.
+
+**Windows**
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[windows,dev]"     # installa anche il driver ViGEmBus (serve conferma admin)
+```
+
+**Linux**
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[linux,dev]"
+sudo modprobe uinput
+# permesso su /dev/uinput, es.:
+echo 'KERNEL=="uinput", GROUP="input", MODE="0660"' | sudo tee /etc/udev/rules.d/99-uinput.rules
+sudo usermod -aG input $USER       # poi rifai il login
+```
+
+Al primo avvio il modello di MediaPipe (~8 MB) viene scaricato in `~/.cache/hand_controller/`.
+
+## Uso
+
+```bash
+hand-controller                     # avvio normale
+hand-controller --dry-run           # solo overlay, nessun input reale (per prove)
+hand-controller --list-cameras
+hand-controller --config profiles/esempio.yaml
+```
+
+### Comandi
+
+| | Modalità **mouse** (mano destra) | Modalità **gamepad** |
+|---|---|---|
+| Movimento | il palmo muove il cursore (rettangolo nell'overlay = schermo intero) | mano sinistra = stick sinistro, mano destra = stick destro |
+| Pollice + indice | click sinistro (tieni premuto = drag) | sx: **LB** · dx: **A** |
+| Pollice + medio | click destro | sx: **Back** · dx: **B** |
+| Pollice + anulare | tieni premuto e muovi su/giù = scroll | sx: **LS** · dx: **X** |
+| Pollice + mignolo | click centrale | sx: **Start** · dx: **Y** |
+| Pugno | — | sx: **LT** · dx: **RT** (analogico) |
+
+- **Ricentrare lo stick**: lo stick si azzera nel punto in cui la mano entra nell'inquadratura;
+  togli la mano e rimettila.
+- **Cambio modalità**: gesto "corna" 🤘 (indice + mignolo tesi) per 1 secondo, oppure **F9**.
+- **Pausa** (nessun input generato): **F10**.
+- **Automatico**: se l'eseguibile in primo piano è in `auto_switch.game_processes` si passa a
+  gamepad, altrimenti a mouse.
+
+Tutte le mappature si cambiano da YAML (vedi `src/hand_controller/default_config.yaml`).
+
+## Test
+
+```bash
+pytest
+```

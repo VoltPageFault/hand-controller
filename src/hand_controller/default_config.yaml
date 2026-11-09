@@ -1,0 +1,88 @@
+# Configurazione di default. Per personalizzare, crea un file YAML con solo
+# le chiavi da cambiare e avvia con:  hand-controller --config mio_profilo.yaml
+
+camera:
+  index: 0            # indice webcam
+  width: 640
+  height: 480
+  fps: 30
+  mirror: true        # vista "a specchio" (consigliato: i movimenti risultano naturali)
+  exposure: null      # null = automatica; es. -6 (DirectShow) per fissarla e tenere 30 fps
+
+tracking:
+  max_hands: 2
+  min_detection_confidence: 0.6
+  min_presence_confidence: 0.5
+  min_tracking_confidence: 0.5
+  model_path: null    # null = scarica automaticamente in ~/.cache/hand_controller/
+
+filter:               # One Euro filter: min_cutoff basso = più fluido, beta alto = più reattivo
+  min_cutoff: 1.2
+  beta: 8.0
+  d_cutoff: 1.0
+
+gestures:
+  pinch_on: 0.30      # distanza pollice-dito / dimensione mano sotto cui il pinch è "premuto"
+  pinch_off: 0.42     # isteresi: sopra questa soglia il pinch si rilascia
+  curl_open: 1.75     # rapporto dita-polso a mano aperta
+  curl_closed: 1.10   # rapporto dita-polso a pugno chiuso
+  mode_switch_hold_s: 1.0   # tempo di mantenimento del gesto "corna" per cambiare modalità
+
+startup_mode: mouse   # mouse | gamepad | paused
+
+hotkeys:              # tasti globali (funzionano anche col gioco in primo piano)
+  toggle_mode: f9
+  toggle_pause: f10
+
+auto_switch:
+  enabled: true
+  # Nome eseguibile (minuscolo) dei giochi: quando sono in primo piano si passa a gamepad,
+  # altrimenti si torna al mouse.
+  game_processes:
+    - witcher3.exe
+    - diablo iv.exe
+
+mouse:
+  hand: right         # right | left | any
+  # rettangolo del fotogramma (x0, y0, x1, y1 normalizzati) mappato sull'intero schermo:
+  # più piccolo = meno movimento del braccio per attraversare lo schermo
+  active_region: [0.25, 0.20, 0.75, 0.65]
+  click_freeze_ms: 150    # blocca il cursore subito dopo un pinch per evitare click "spostati"
+  scroll_speed: 40        # tacche di scroll per unità di movimento verticale
+  bindings:               # pinch pollice + dito -> azione
+    index: left           # tenuto premuto = drag
+    middle: right
+    ring: scroll          # tieni premuto e muovi la mano su/giù
+    pinky: middle
+
+gamepad:
+  stick:
+    radius: 0.8         # spostamento (in "dimensioni mano") per deflessione massima
+    deadzone: 0.12
+  trigger_threshold: 0.25   # chiusura minima della mano prima che il grilletto inizi a premere
+  # Ogni mano: quale stick controlla, cosa fanno i pinch e il pugno.
+  # Lo stick si ricentra dove la mano entra nell'inquadratura:
+  # per ricentrare basta togliere la mano dal campo visivo e rimetterla.
+  left_hand:
+    stick: left
+    fist: LT
+    pinch:
+      index: LB
+      middle: BACK
+      ring: LS
+      pinky: START
+  right_hand:
+    stick: right
+    fist: RT
+    pinch:
+      index: A
+      middle: B
+      ring: X
+      pinky: Y
+
+backend:
+  gamepad: auto       # auto | vgamepad | uinput | null
+  mouse: auto         # auto | pynput | null
+
+overlay:
+  enabled: true

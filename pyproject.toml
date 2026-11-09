@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hand-controller"
+version = "0.1.0"
+description = "Mouse e controller Xbox virtuali pilotati dal tracciamento della mano via webcam"
+requires-python = ">=3.9,<3.13"
+dependencies = [
+    "opencv-python>=4.8",
+    "mediapipe>=0.10.14",
+    "numpy>=1.24",
+    "pyyaml>=6.0",
+    "pynput>=1.7",
+]
+
+[project.optional-dependencies]
+# Backend del controller virtuale, specifici per piattaforma
+windows = ["vgamepad>=0.1.0; sys_platform == 'win32'"]
+linux = ["evdev>=1.6; sys_platform == 'linux'"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+hand-controller = "hand_controller.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hand_controller = ["default_config.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
