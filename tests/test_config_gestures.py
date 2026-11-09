@@ -175,3 +175,11 @@ def test_pointing_does_not_recenter_mouse():
     mm.request_recenter()
     mm.update({"Right": feat(ext={"index": True, "middle": True, "ring": True, "pinky": True})}, 0.2)
     assert mm.recentering
+
+
+def test_gamepad_trigger_only_with_real_fist():
+    from hand_controller.gamepad_mode import GamepadMapper
+    m = GamepadMapper(load_default_config()["gamepad"], 1.0)
+    v_sign = feat(ext={"index": True, "middle": True}, curl=0.8)
+    assert m.update({"Right": v_sign}).rt == 0.0
+    assert m.update({"Right": feat(curl=0.8)}).rt > 0.6          # pugno: analogico come prima

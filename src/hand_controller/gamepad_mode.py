@@ -66,6 +66,10 @@ class GamepadMapper:
             if fist:
                 t = self.trigger_threshold
                 value = max(0.0, (f.curl - t) / (1.0 - t)) if t < 1 else 0.0
+                # solo col pugno vero (quattro dita piegate): pose come V, corna o indice teso
+                # non devono premere il grilletto
+                if f.extended and not f.fist:
+                    value = 0.0
                 self._apply(state, fist, value)
         return state
 
