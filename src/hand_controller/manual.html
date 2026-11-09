@@ -245,150 +245,23 @@ footer div { max-width: 1180px; margin: 0 auto; }
 <div class="page">
   <nav class="toc" aria-label="Indice">
     <ol>
+      <li><a href="#installazione">Installazione</a></li>
+      <li><a href="#sistemi">Sistemi supportati</a></li>
       <li><a href="#avvio">Avvio rapido</a></li>
       <li><a href="#mouse">Mouse</a></li>
       <li><a href="#gamepad">Gamepad</a></li>
       <li><a href="#gesti">Gesti personalizzati</a></li>
       <li><a href="#audio">Battiti e schiocchi</a></li>
-      <li><a href="#tasti">Tasti</a></li>
       <li><a href="#config">Configurazione</a></li>
+      <li><a href="#tasti">Tasti</a></li>
       <li><a href="#consigli">Consigli e problemi</a></li>
       <li><a href="#come">Come funziona</a></li>
-      <li><a href="#installazione">Installazione</a></li>
-      <li><a href="#sistemi">Sistemi supportati</a></li>
       <li><a href="#tecnici">Per i tecnici</a></li>
       <li><a href="#crediti">Crediti</a></li>
     </ol>
   </nav>
 
   <main>
-    <section id="avvio">
-      <h2>Avvio rapido</h2>
-      <p>Dall'apertura al primo click in meno di un minuto.</p>
-      <ol class="steps">
-        <li><strong>Apri Hand Controller</strong>Doppio click sul collegamento del desktop. In basso a destra compare la finestrella con l'immagine della webcam.</li>
-        <li><strong>Appoggia il gomito</strong>Tieni la <span id="mouseHandName">mano destra</span> davanti alla webcam, a 40–70 cm, col palmo verso lo schermo. Basta muovere il polso.</li>
-        <li><strong>Chiudi il pugno per centrare</strong>Il cursore va al centro del monitor: quella posizione della mano diventa il centro del movimento.</li>
-        <li><strong>Tocca il pollice con l'indice per cliccare</strong>Tieni le dita unite per trascinare.</li>
-        <li><strong>Passa al gamepad quando giochi</strong>Fai le corna per un secondo o premi <kbd data-hk="toggle_mode">F9</kbd>. Se il gioco è nell'elenco, il passaggio è automatico.</li>
-        <li><strong>Chiudi quando hai finito</strong><kbd data-hk="quit">Ctrl+F10</kbd> da qualsiasi finestra, oppure <kbd>Q</kbd> sull'overlay.</li>
-      </ol>
-    </section>
-
-    <section id="mouse" data-mode="mouse">
-      <h2>Mouse</h2>
-      <p>Il sistema di movimento usa un piccolo rettangolo intorno alla mano: tutto lo schermo sta in pochi centimetri di polso, così il braccio non si stanca.</p>
-      <figure class="wide">
-        <svg viewBox="0 0 760 260" role="img" aria-label="Il rettangolo intorno alla mano corrisponde all'intero schermo">
-          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#5A6773"/></marker></defs>
-          <rect x="10" y="20" width="300" height="225" rx="6" fill="#1F2830"/>
-          <text x="22" y="42" fill="#AEB9C3" font-family="Bahnschrift, sans-serif" font-size="14">webcam</text>
-          <rect x="112" y="92" width="96" height="54" fill="none" stroke="#00A9DB" stroke-width="2"/>
-          <path d="M154 119h12M160 113v12" stroke="#00A9DB" stroke-width="1.5"/>
-          <circle cx="188" cy="104" r="6" fill="#12A150"/>
-          <text x="112" y="166" fill="#00A9DB" font-family="Bahnschrift, sans-serif" font-size="13">largo quanto la mano</text>
-          <path d="M322 132h86" stroke="#5A6773" stroke-width="2" fill="none" marker-end="url(#ar)"/>
-          <rect x="420" y="40" width="330" height="186" rx="6" fill="#F4F7F9" stroke="#15202B" stroke-width="2"/>
-          <text x="432" y="62" fill="#5A6773" font-family="Bahnschrift, sans-serif" font-size="14">schermo intero</text>
-          <path d="M680 70l0 26 7-6 5 11 5-2-5-11 9 0z" fill="#15202B"/>
-          <text x="432" y="212" fill="#5A6773" font-family="Bahnschrift, sans-serif" font-size="13">stesso punto nel rettangolo, stesso punto sullo schermo</text>
-        </svg>
-        <figcaption>Il pallino verde è il centro del palmo. Il rettangolo azzurro e la crocetta del centro sono disegnati anche nell'overlay.</figcaption>
-      </figure>
-      <table>
-        <thead><tr><th>Gesto</th><th>Cosa fa</th></tr></thead>
-        <tbody id="mouseTable"></tbody>
-      </table>
-      <h3>Se il cursore arriva al bordo</h3>
-      <p>Chiudi il pugno, riporta la mano in una posizione comoda e riaprila: il cursore riparte dal centro. Puoi rimpicciolire o allargare il rettangolo con <kbd>+</kbd> e <kbd>−</kbd> sull'overlay.</p>
-    </section>
-
-    <section id="gamepad" data-mode="pad">
-      <h2>Gamepad</h2>
-      <p>Ogni mano diventa uno stick del controller Xbox. Lo stick si centra nel punto in cui la mano entra nell'inquadratura: per ricentrarlo togli la mano e rimettila. Il pugno chiuso preme il grilletto in modo graduale.</p>
-      <div class="pad-hands wide">
-        <div><h3>Mano sinistra</h3><table><tbody id="padLeft"></tbody></table></div>
-        <div><h3>Mano destra</h3><table><tbody id="padRight"></tbody></table></div>
-      </div>
-      <p class="muted" style="margin-top:16px">Croce direzionale, RB e altri pulsanti si possono aggiungere con i gesti personalizzati.</p>
-    </section>
-
-    <section id="gesti">
-      <h2>Gesti personalizzati</h2>
-      <p>Una posa della mano tenuta per un attimo esegue un'azione: cambiare modalità, premere una combinazione di tasti, un pulsante del controller o avviare un programma. Mentre tieni la posa, nell'overlay si riempie una barra gialla col nome del gesto.</p>
-      <h3>I tuoi gesti</h3>
-      <div class="gestures wide" id="gestureList"></div>
-      <h3>I tuoi script e programmi</h3>
-      <p>Ogni gesto e ogni numero di colpi può avviare qualsiasi cosa: un programma, un gioco, uno script tuo (<code>.py</code>, <code>.ps1</code>, <code>.bat</code>, <code>.vbs</code>), un collegamento, un link come <code>steam://rungameid/…</code> oppure una riga di comando completa. Il pulsante <b>Prova</b> nella configurazione lo avvia subito per verificarlo.</p>
-      <p>Lo script riceve alcune variabili d'ambiente, così un solo script può comportarsi in modo diverso a seconda di cosa l'ha avviato:</p>
-      <table><tbody>
-        <tr><td><code>HC_SOURCE</code></td><td><code>gesto</code> oppure <code>audio</code></td></tr>
-        <tr><td><code>HC_NAME</code></td><td>Nome del gesto, oppure «2 colpi»</td></tr>
-        <tr><td><code>HC_COUNT</code></td><td>Numero di colpi (solo audio)</td></tr>
-        <tr><td><code>HC_MODE</code></td><td><code>mouse</code>, <code>gamepad</code> o <code>paused</code></td></tr>
-      </tbody></table>
-      <p class="muted" style="margin-top:16px">Le pose valgono solo senza pinch attivi. Una posa con tutte le dita piegate assomiglia al pugno, che centra il mouse e preme il grilletto: meglio lasciare almeno un dito teso.</p>
-    </section>
-
-    <section id="audio">
-      <h2>Battiti e schiocchi</h2>
-      <p>Batti le mani o schiocca le dita per dare un comando. Il microfono resta spento finché non lo chiami tu, così rumori, voce e audio dei giochi non fanno scattare nulla.</p>
-      <ol class="steps">
-        <li><strong>Alza l'indice</strong>Come quando chiedi a qualcuno di ascoltarti. Tienilo su <span id="listenHold">2 secondi</span>: nell'overlay la barra gialla si riempie.</li>
-        <li><strong>Abbassalo quando compare «IN ASCOLTO»</strong>Una barra si svuota: hai <span id="listenWindow">3 secondi</span>.</li>
-        <li><strong>Batti le mani o schiocca le dita</strong>Ogni colpo accende un pallino. Battiti e schiocchi valgono uguale: conta solo quanti sono.</li>
-      </ol>
-      <table><thead><tr><th>Colpi</th><th>Cosa succede</th></tr></thead><tbody id="clapTable"></tbody></table>
-      <p class="muted" style="margin-top:16px">Se i colpi non vengono contati, prova «Prova microfono» in Configurazione › Audio: mostra il volume di ogni colpo sentito.</p>
-    </section>
-
-    <section id="tasti">
-      <h2>Tasti</h2>
-      <h3>Ovunque, anche dentro i giochi</h3>
-      <table><tbody id="hotkeyTable"></tbody></table>
-      <h3>Sulla finestrella dell'overlay</h3>
-      <table><tbody>
-        <tr><td><kbd>M</kbd></td><td>Cambia modalità</td></tr>
-        <tr><td><kbd>P</kbd></td><td>Pausa o riprendi</td></tr>
-        <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>Rettangolo del mouse più piccolo (più sensibile) o più grande</td></tr>
-        <tr><td><kbd>C</kbd></td><td>Apri la configurazione</td></tr>
-        <tr><td><kbd>I</kbd></td><td>Apri questo manuale</td></tr>
-        <tr><td><kbd>Q</kbd> <kbd>Esc</kbd></td><td>Chiudi l'app</td></tr>
-      </tbody></table>
-    </section>
-
-    <section id="config">
-      <h2>Configurazione</h2>
-      <p>Il pulsante <span class="pill">config</span> in basso a destra nell'overlay apre tutte le impostazioni: mouse, gamepad, gesti, riconoscimento, webcam e overlay. Passa col mouse su una voce per leggerne la spiegazione.</p>
-      <p><b>Applica</b> salva le modifiche e l'app in esecuzione si aggiorna subito, senza riavvio. <b>Ripristina default</b> riporta tutto ai valori originali. Con <b>Esporta</b> e <b>Importa</b> salvi e carichi profili diversi, per esempio uno per gioco.</p>
-      <p class="muted">Le tue impostazioni sono in <code id="cfgPath">%APPDATA%\hand-controller\config.yaml</code> e contengono solo ciò che hai cambiato.</p>
-      <h3>Giochi con passaggio automatico al gamepad</h3>
-      <p id="gamesLine"></p>
-    </section>
-
-    <section id="consigli">
-      <h2>Consigli e problemi</h2>
-      <h3>Per un tracciamento stabile</h3>
-      <p>Luce frontale o dall'alto, mai una finestra luminosa alle spalle. Mano tra 40 e 70 cm dalla webcam, tutta dentro l'inquadratura. Uno sfondo semplice aiuta, maniche lunghe e scure non danno problemi.</p>
-      <details><summary>Il cursore trema quando la mano è ferma</summary><p>In Configurazione › Mouse abbassa «Fermezza cursore», oppure allarga il rettangolo con <kbd>−</kbd>. Spesso basta più luce: con poca luce la webcam rallenta e i punti diventano incerti.</p></details>
-      <details><summary>I click partono da soli o non partono</summary><p>In Configurazione › Riconoscimento regola «Soglia di contatto»: più bassa se partono da soli, più alta se le dita devono quasi schiacciarsi. Tieni la soglia di rilascio sempre più alta di quella di contatto.</p></details>
-      <details><summary>Un gesto personalizzato non scatta</summary><p>Controlla che sia attivo (✔ nella lista) e che le modifiche siano state applicate con <b>Applica</b>. Poi verifica che valga nella modalità in cui sei e per la mano che usi.</p></details>
-      <details><summary>Il gioco non vede il controller</summary><p>Serve il driver ViGEmBus, installato insieme all'app. Il controller virtuale compare come «Controller (Xbox 360)» in <code>joy.cpl</code>. Alcuni giochi lo rilevano solo se è già collegato prima dell'avvio: apri prima Hand Controller.</p></details>
-      <details><summary>Pochi fotogrammi al secondo</summary><p>Aumenta la luce, oppure in Configurazione › Webcam imposta un'esposizione fissa (per esempio −6).</p></details>
-    </section>
-
-    <section id="come">
-      <h2>Come funziona</h2>
-      <p>Tutto avviene sul tuo PC: le immagini della webcam non vengono salvate né inviate a nessuno.</p>
-      <div class="pipeline wide">
-        <div><b>Webcam</b><span>30 immagini al secondo, lette in parallelo.</span></div>
-        <div><b>21 punti</b><span>MediaPipe trova polso, nocche e falangi di ogni mano.</span></div>
-        <div><b>Filtro</b><span>Un filtro One Euro toglie il tremolio senza aggiungere ritardo.</span></div>
-        <div><b>Gesti</b><span>Distanze e angoli diventano pinch, pugno e pose.</span></div>
-        <div><b>Input</b><span>Mouse e controller Xbox virtuali, visti dal PC come quelli veri.</span></div>
-      </div>
-    </section>
-
     <section id="installazione">
       <h2>Installazione</h2>
       <h3>Requisiti</h3>
@@ -476,6 +349,133 @@ hand-controller --create-shortcut</pre>
         </tbody>
       </table>
       <p class="muted" style="margin-top:14px">Windows è il sistema su cui l'app è sviluppata e provata ogni giorno. Linux e macOS sono supportati dal codice ma provati meno: segnala eventuali problemi.</p>
+    </section>
+
+    <section id="avvio">
+      <h2>Avvio rapido</h2>
+      <p>Dall'apertura al primo click in meno di un minuto.</p>
+      <ol class="steps">
+        <li><strong>Apri Hand Controller</strong>Doppio click sul collegamento del desktop. In basso a destra compare la finestrella con l'immagine della webcam.</li>
+        <li><strong>Appoggia il gomito</strong>Tieni la <span id="mouseHandName">mano destra</span> davanti alla webcam, a 40–70 cm, col palmo verso lo schermo. Basta muovere il polso.</li>
+        <li><strong>Chiudi il pugno per centrare</strong>Il cursore va al centro del monitor: quella posizione della mano diventa il centro del movimento.</li>
+        <li><strong>Tocca il pollice con l'indice per cliccare</strong>Tieni le dita unite per trascinare.</li>
+        <li><strong>Passa al gamepad quando giochi</strong>Fai le corna per un secondo o premi <kbd data-hk="toggle_mode">F9</kbd>. Se il gioco è nell'elenco, il passaggio è automatico.</li>
+        <li><strong>Chiudi quando hai finito</strong><kbd data-hk="quit">Ctrl+F10</kbd> da qualsiasi finestra, oppure <kbd>Q</kbd> sull'overlay.</li>
+      </ol>
+    </section>
+
+    <section id="mouse" data-mode="mouse">
+      <h2>Mouse</h2>
+      <p>Il sistema di movimento usa un piccolo rettangolo intorno alla mano: tutto lo schermo sta in pochi centimetri di polso, così il braccio non si stanca.</p>
+      <figure class="wide">
+        <svg viewBox="0 0 760 260" role="img" aria-label="Il rettangolo intorno alla mano corrisponde all'intero schermo">
+          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#5A6773"/></marker></defs>
+          <rect x="10" y="20" width="300" height="225" rx="6" fill="#1F2830"/>
+          <text x="22" y="42" fill="#AEB9C3" font-family="Bahnschrift, sans-serif" font-size="14">webcam</text>
+          <rect x="112" y="92" width="96" height="54" fill="none" stroke="#00A9DB" stroke-width="2"/>
+          <path d="M154 119h12M160 113v12" stroke="#00A9DB" stroke-width="1.5"/>
+          <circle cx="188" cy="104" r="6" fill="#12A150"/>
+          <text x="112" y="166" fill="#00A9DB" font-family="Bahnschrift, sans-serif" font-size="13">largo quanto la mano</text>
+          <path d="M322 132h86" stroke="#5A6773" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+          <rect x="420" y="40" width="330" height="186" rx="6" fill="#F4F7F9" stroke="#15202B" stroke-width="2"/>
+          <text x="432" y="62" fill="#5A6773" font-family="Bahnschrift, sans-serif" font-size="14">schermo intero</text>
+          <path d="M680 70l0 26 7-6 5 11 5-2-5-11 9 0z" fill="#15202B"/>
+          <text x="432" y="212" fill="#5A6773" font-family="Bahnschrift, sans-serif" font-size="13">stesso punto nel rettangolo, stesso punto sullo schermo</text>
+        </svg>
+        <figcaption>Il pallino verde è il centro del palmo. Il rettangolo azzurro e la crocetta del centro sono disegnati anche nell'overlay.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Gesto</th><th>Cosa fa</th></tr></thead>
+        <tbody id="mouseTable"></tbody>
+      </table>
+      <h3>Se il cursore arriva al bordo</h3>
+      <p>Chiudi il pugno, riporta la mano in una posizione comoda e riaprila: il cursore riparte dal centro. Puoi rimpicciolire o allargare il rettangolo con <kbd>+</kbd> e <kbd>−</kbd> sull'overlay.</p>
+    </section>
+
+    <section id="gamepad" data-mode="pad">
+      <h2>Gamepad</h2>
+      <p>Ogni mano diventa uno stick del controller Xbox. Lo stick si centra nel punto in cui la mano entra nell'inquadratura: per ricentrarlo togli la mano e rimettila. Il pugno chiuso preme il grilletto in modo graduale.</p>
+      <div class="pad-hands wide">
+        <div><h3>Mano sinistra</h3><table><tbody id="padLeft"></tbody></table></div>
+        <div><h3>Mano destra</h3><table><tbody id="padRight"></tbody></table></div>
+      </div>
+      <p class="muted" style="margin-top:16px">Croce direzionale, RB e altri pulsanti si possono aggiungere con i gesti personalizzati.</p>
+    </section>
+
+    <section id="gesti">
+      <h2>Gesti personalizzati</h2>
+      <p>Una posa della mano tenuta per un attimo esegue un'azione: cambiare modalità, premere una combinazione di tasti, un pulsante del controller o avviare un programma. Mentre tieni la posa, nell'overlay si riempie una barra gialla col nome del gesto.</p>
+      <h3>I tuoi gesti</h3>
+      <div class="gestures wide" id="gestureList"></div>
+      <h3>I tuoi script e programmi</h3>
+      <p>Ogni gesto e ogni numero di colpi può avviare qualsiasi cosa: un programma, un gioco, uno script tuo (<code>.py</code>, <code>.ps1</code>, <code>.bat</code>, <code>.vbs</code>), un collegamento, un link come <code>steam://rungameid/…</code> oppure una riga di comando completa. Il pulsante <b>Prova</b> nella configurazione lo avvia subito per verificarlo.</p>
+      <p>Lo script riceve alcune variabili d'ambiente, così un solo script può comportarsi in modo diverso a seconda di cosa l'ha avviato:</p>
+      <table><tbody>
+        <tr><td><code>HC_SOURCE</code></td><td><code>gesto</code> oppure <code>audio</code></td></tr>
+        <tr><td><code>HC_NAME</code></td><td>Nome del gesto, oppure «2 colpi»</td></tr>
+        <tr><td><code>HC_COUNT</code></td><td>Numero di colpi (solo audio)</td></tr>
+        <tr><td><code>HC_MODE</code></td><td><code>mouse</code>, <code>gamepad</code> o <code>paused</code></td></tr>
+      </tbody></table>
+      <p class="muted" style="margin-top:16px">Le pose valgono solo senza pinch attivi. Una posa con tutte le dita piegate assomiglia al pugno, che centra il mouse e preme il grilletto: meglio lasciare almeno un dito teso.</p>
+    </section>
+
+    <section id="audio">
+      <h2>Battiti e schiocchi</h2>
+      <p>Batti le mani o schiocca le dita per dare un comando. Il microfono resta spento finché non lo chiami tu, così rumori, voce e audio dei giochi non fanno scattare nulla.</p>
+      <ol class="steps">
+        <li><strong>Alza l'indice</strong>Come quando chiedi a qualcuno di ascoltarti. Tienilo su <span id="listenHold">2 secondi</span>: nell'overlay la barra gialla si riempie.</li>
+        <li><strong>Abbassalo quando compare «IN ASCOLTO»</strong>Una barra si svuota: hai <span id="listenWindow">3 secondi</span>.</li>
+        <li><strong>Batti le mani o schiocca le dita</strong>Ogni colpo accende un pallino. Battiti e schiocchi valgono uguale: conta solo quanti sono.</li>
+      </ol>
+      <table><thead><tr><th>Colpi</th><th>Cosa succede</th></tr></thead><tbody id="clapTable"></tbody></table>
+      <p class="muted" style="margin-top:16px">Se i colpi non vengono contati, prova «Prova microfono» in Configurazione › Audio: mostra il volume di ogni colpo sentito.</p>
+    </section>
+
+    <section id="config">
+      <h2>Configurazione</h2>
+      <p>Il pulsante <span class="pill">config</span> in basso a destra nell'overlay apre tutte le impostazioni: mouse, gamepad, gesti, riconoscimento, webcam e overlay. Passa col mouse su una voce per leggerne la spiegazione.</p>
+      <p><b>Applica</b> salva le modifiche e l'app in esecuzione si aggiorna subito, senza riavvio. <b>Ripristina default</b> riporta tutto ai valori originali. Con <b>Esporta</b> e <b>Importa</b> salvi e carichi profili diversi, per esempio uno per gioco.</p>
+      <p class="muted">Le tue impostazioni sono in <code id="cfgPath">%APPDATA%\hand-controller\config.yaml</code> e contengono solo ciò che hai cambiato.</p>
+      <h3>Giochi con passaggio automatico al gamepad</h3>
+      <p id="gamesLine"></p>
+    </section>
+
+    <section id="tasti">
+      <h2>Tasti</h2>
+      <h3>Ovunque, anche dentro i giochi</h3>
+      <table><tbody id="hotkeyTable"></tbody></table>
+      <h3>Sulla finestrella dell'overlay</h3>
+      <table><tbody>
+        <tr><td><kbd>M</kbd></td><td>Cambia modalità</td></tr>
+        <tr><td><kbd>P</kbd></td><td>Pausa o riprendi</td></tr>
+        <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>Rettangolo del mouse più piccolo (più sensibile) o più grande</td></tr>
+        <tr><td><kbd>C</kbd></td><td>Apri la configurazione</td></tr>
+        <tr><td><kbd>I</kbd></td><td>Apri questo manuale</td></tr>
+        <tr><td><kbd>Q</kbd> <kbd>Esc</kbd></td><td>Chiudi l'app</td></tr>
+      </tbody></table>
+    </section>
+
+    <section id="consigli">
+      <h2>Consigli e problemi</h2>
+      <h3>Per un tracciamento stabile</h3>
+      <p>Luce frontale o dall'alto, mai una finestra luminosa alle spalle. Mano tra 40 e 70 cm dalla webcam, tutta dentro l'inquadratura. Uno sfondo semplice aiuta, maniche lunghe e scure non danno problemi.</p>
+      <details><summary>Il cursore trema quando la mano è ferma</summary><p>In Configurazione › Mouse abbassa «Fermezza cursore», oppure allarga il rettangolo con <kbd>−</kbd>. Spesso basta più luce: con poca luce la webcam rallenta e i punti diventano incerti.</p></details>
+      <details><summary>I click partono da soli o non partono</summary><p>In Configurazione › Riconoscimento regola «Soglia di contatto»: più bassa se partono da soli, più alta se le dita devono quasi schiacciarsi. Tieni la soglia di rilascio sempre più alta di quella di contatto.</p></details>
+      <details><summary>Un gesto personalizzato non scatta</summary><p>Controlla che sia attivo (✔ nella lista) e che le modifiche siano state applicate con <b>Applica</b>. Poi verifica che valga nella modalità in cui sei e per la mano che usi.</p></details>
+      <details><summary>Il gioco non vede il controller</summary><p>Serve il driver ViGEmBus, installato insieme all'app. Il controller virtuale compare come «Controller (Xbox 360)» in <code>joy.cpl</code>. Alcuni giochi lo rilevano solo se è già collegato prima dell'avvio: apri prima Hand Controller.</p></details>
+      <details><summary>Pochi fotogrammi al secondo</summary><p>Aumenta la luce, oppure in Configurazione › Webcam imposta un'esposizione fissa (per esempio −6).</p></details>
+    </section>
+
+    <section id="come">
+      <h2>Come funziona</h2>
+      <p>Tutto avviene sul tuo PC: le immagini della webcam non vengono salvate né inviate a nessuno.</p>
+      <div class="pipeline wide">
+        <div><b>Webcam</b><span>30 immagini al secondo, lette in parallelo.</span></div>
+        <div><b>21 punti</b><span>MediaPipe trova polso, nocche e falangi di ogni mano.</span></div>
+        <div><b>Filtro</b><span>Un filtro One Euro toglie il tremolio senza aggiungere ritardo.</span></div>
+        <div><b>Gesti</b><span>Distanze e angoli diventano pinch, pugno e pose.</span></div>
+        <div><b>Input</b><span>Mouse e controller Xbox virtuali, visti dal PC come quelli veri.</span></div>
+      </div>
     </section>
 
     <section id="tecnici">
