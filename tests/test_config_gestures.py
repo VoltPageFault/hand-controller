@@ -49,12 +49,17 @@ def test_diff_config_nested():
     assert diff_config(base, {"a": {"b": 2, "c": [1, 2]}, "d": 3}) == {"a": {"b": 2}}
 
 
-def test_default_gestures_are_valid_and_only_horns_enabled():
-    gestures = load_default_config()["custom_gestures"]
+def test_default_gestures_are_valid_and_horns_listen_enabled():
+    cfg = load_default_config()
+    gestures = cfg["custom_gestures"]
     assert all(validate_action(g["action"]) is None for g in gestures)
-    enabled = [g for g in gestures if g.get("enabled", True)]
-    assert len(enabled) == 1 and enabled[0]["action"]["value"] == "toggle_mode"
-    assert describe_pose(enabled[0]["fingers"]) == "Corna"
+    enabled = {g["action"]["value"]: g for g in gestures if g.get("enabled", True)}
+    assert set(enabled) == {"toggle_mode", "listen"}
+    assert describe_pose(enabled["toggle_mode"]["fingers"]) == "Corna"
+    assert describe_pose(enabled["listen"]["fingers"]) == "Indice"
+    assert enabled["listen"]["trigger"] == "once" and enabled["listen"]["hold_s"] == 2.0
+    for n, action in cfg["audio"]["clap_actions"].items():
+        assert action is None or validate_action(action) is None, n
 
 
 # ---- pose e motore dei gesti -----------------------------------------------------------------
@@ -198,3 +203,58 @@ def test_manual_is_built_with_current_config(tmp_path):
     data = json.loads(raw.replace("<\/", "</"))
     assert data["hotkeys"]["quit"] == "ctrl+f10"
     assert data["gestures"][0]["action"] == "Cambia modalità mouse/gamepad"
+
+
+def test_engine_release_fires_when_pose_ends_after_hold():
+    ex = Recorder()
+    eng = GestureEngine([_gesture(trigger="release", hold_s=1.0)], ex)
+    eng.update({"Right": horns()}, "mouse", 0.0)
+    eng.update({}, "mouse", 0.5)                       # abbassata troppo presto: niente
+    eng.update({}, "mouse", 0.8)
+    assert ex.log == []
+    eng.update({"Right": horns()}, "mouse", 1.0)
+    prog, name = eng.update({"Right": horns()}, "mouse", 2.2)
+    assert ex.log == [] and prog == 1.0 and "abbassa" in name   # pronta, aspetta il rilascio
+    eng.update({}, "mouse", 2.3)
+    eng.update({}, "mouse", 2.5)
+    assert ex.log == [("fire", "toggle_mode")]
+
+
+# ---- audio: riconoscimento dei colpi secchi --------------------------------------------------
+def _blocks(level_db_seq, n=441):
+    """Blocchi da 10 ms: rumore al livello indicato (dBFS di picco)."""
+    rng = np.random.default_rng(0)
+    for db in level_db_seq:
+        amp = 10 ** (db / 20)
+        yield (rng.uniform(-1, 1, n) * amp).astype(np.float32)
+
+
+def test_onset_detector_counts_claps_and_ignores_speech_and_keyboard():
+    from hand_controller.audio import OnsetDetector
+    det = OnsetDetector()                              # soglie di default tarate sui dati reali
+    seq = [-45] * 30                                   # fondo stanza
+    seq += [-2, -10, -20, -30] + [-45] * 40            # battito (picco forte, salita secca)
+    seq += [-30, -25, -20, -18, -20, -25] + [-45] * 20  # voce: forte ma sale piano
+    seq += [-17] + [-45] * 20                          # tasto: secco ma troppo debole
+    seq += [0, -12, -25] + [-45] * 20                  # schiocco
+    seq += [-1, -15] + [-45] * 30                      # secondo colpo
+    hits = [det.process(b, i * 0.01) for i, b in enumerate(_blocks(seq))]
+    assert sum(hits) == 3
+
+
+def test_onset_detector_min_gap_ignores_echo():
+    from hand_controller.audio import OnsetDetector
+    det = OnsetDetector()
+    seq = [-45] * 20 + [0, -40, -3] + [-45] * 20       # eco dopo 20 ms
+    assert sum(det.process(b, i * 0.01) for i, b in enumerate(_blocks(seq))) == 1
+
+
+def test_listener_poll_closes_after_silence(monkeypatch):
+    from hand_controller.audio import ClapListener
+    lst = ClapListener({"window_s": 3.0, "end_after_silence_s": 1.0})
+    lst._stream = object()                             # finta finestra aperta
+    monkeypatch.setattr(lst, "stop", lambda: setattr(lst, "_stream", None))
+    lst._t0 = 0.0
+    lst._hits = [0.5, 0.9]
+    assert lst.poll(1.5) is None                       # silenzio troppo breve
+    assert lst.poll(2.0) == 2                          # 1 s dopo l'ultimo colpo: chiusa

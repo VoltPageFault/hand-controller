@@ -138,6 +138,7 @@ class ConfigUI:
         self._tab_mouse()
         self._tab_gamepad()
         self._tab_gestures()
+        self._tab_audio()
         self._tab_recognition()
         self._tab_camera()
         self._tab_overlay()
@@ -376,6 +377,91 @@ class ConfigUI:
             "la posa.")).grid(row=t._row, column=0, columnspan=3, sticky="w")
         t._row += 1
 
+    def _tab_audio(self):
+        t = self._tab("Audio", "Battiti di mani e schiocchi di dita. Il microfono è spento finché "
+                      "non fai il gesto di ascolto (di default: indice alzato per 2 secondi). "
+                      "Poi hai qualche secondo per battere le mani o schioccare le dita: "
+                      "il numero di colpi sceglie l'azione.")
+        self.check(t, ("audio", "enabled"), "Attivo",
+                   "Se disattivato, il gesto di ascolto non apre il microfono.")
+        var = tk.StringVar()
+        devices = ["Predefinito di sistema"]
+        try:
+            from .audio import list_input_devices
+            devices += list_input_devices()
+        except Exception:
+            pass
+        cb = ttk.Combobox(t, textvariable=var, values=devices, state="readonly", width=44)
+        self.fields.append(Field(("audio", "device"),
+                                 lambda: "" if var.get() == devices[0] else var.get(),
+                                 lambda v: var.set(v or devices[0])))
+        self._row(t, "Microfono", cb, "Quello della webcam di solito va benissimo: è puntato verso "
+                  "di te.")
+
+        self._section(t, "Cosa fanno i colpi")
+        self.clap_fields = {}
+        for n, label in (("1", "1 colpo"), ("2", "2 colpi"), ("3", "3 colpi")):
+            af = ActionField(t)
+            self.clap_fields[n] = af
+            self._row(t, label, af.frame, "Azione eseguita quando senti questo numero di colpi "
+                      "nella finestra di ascolto.")
+
+        self._section(t, "Finestra di ascolto")
+        self.num(t, ("audio", "window_s"), "Durata massima (s)", 1.0, 10.0, 0.5,
+                 "Per quanto tempo il microfono resta in ascolto dopo il gesto.")
+        self.num(t, ("audio", "end_after_silence_s"), "Chiudi dopo silenzio (s)", 0.3, 5.0, 0.1,
+                 "Dopo l'ultimo colpo, questo silenzio chiude subito l'ascolto senza aspettare la "
+                 "fine. Più lungo = più tempo per il colpo successivo.")
+
+        self._section(t, "Sensibilità")
+        self.num(t, ("audio", "min_level_db"), "Volume minimo (dB)", -60, 0, 1,
+                 "Un colpo deve superare questo volume (0 = massimo del microfono). Più basso = "
+                 "sente anche colpi deboli, ma anche più rumori.", integer=True)
+        self.num(t, ("audio", "jump_db"), "Salita improvvisa (dB)", 5, 60, 1,
+                 "Di quanto il suono deve salire in 10 millisecondi: è ciò che distingue un colpo "
+                 "secco dalla voce o dalla musica.", integer=True)
+        self.num(t, ("audio", "rise_db"), "Sopra il rumore di fondo (dB)", 5, 60, 1,
+                 "Quanto il colpo deve superare il rumore della stanza.", integer=True)
+        self.num(t, ("audio", "min_gap_ms"), "Distanza minima tra colpi (ms)", 50, 1000, 10,
+                 "Due colpi più vicini di così contano come uno (evita di contare l'eco).",
+                 integer=True)
+
+        box = ttk.Frame(t)
+        ttk.Button(box, text="Prova microfono", command=self._test_mic).pack(side="left")
+        self.mic_result = ttk.Label(box, style="Help.TLabel", wraplength=440, justify="left")
+        self.mic_result.pack(side="left", padx=10)
+        self._row(t, "", box, "Ascolta per qualche secondo con le impostazioni qui sopra (anche "
+                  "senza averle applicate) e mostra cosa ha sentito.")
+
+    def _test_mic(self):
+        from .audio import ClapListener
+        try:
+            cfg = self.collect()["audio"]
+        except ValueError as exc:
+            messagebox.showerror("Valore non valido", str(exc), parent=self.root)
+            return
+        lst = ClapListener(cfg)
+        if not lst.start():
+            self.mic_result.configure(text=f"Errore: {lst.error}")
+            return
+
+        def tick():
+            n = lst.poll()
+            if n is None:
+                left, hits = lst.status()
+                self.mic_result.configure(text=f"In ascolto: batti le mani o schiocca le dita. "
+                                               f"Colpi: {hits}  ({left * lst.window_s:0.1f} s)")
+                self.root.after(100, tick)
+                return
+            peaks = ", ".join(f"{db:.0f} dB" for _, db, _ in lst.events) or "nessuno"
+            floor = lst.events[0][2] if lst.events else None
+            action = (cfg.get("clap_actions") or {}).get(str(n))
+            what = describe_action(action) if action else "nessuna azione"
+            self.mic_result.configure(text=f"Sentiti {n} colpi: {what}.\nPicchi: {peaks}"
+                                      + (f"; rumore di fondo {floor:.0f} dB" if floor else ""))
+
+        tick()
+
     def _tab_recognition(self):
         t = self._tab("Riconoscimento", "Sensibilità del riconoscimento di pinch e pugno, e "
                       "filtro anti-tremolio della mano. Cambia solo se qualcosa non viene "
@@ -517,7 +603,8 @@ class ConfigUI:
             ms = g.get("modes", list(MODE_LABELS))
             modes = "Tutte" if set(ms) >= set(MODE_LABELS) else ", ".join(
                 MODE_LABELS.get(m, m) for m in ms)
-            hold = f"{float(g.get('hold_s', 0)):g} s" + (" ⟳" if g.get("trigger") == "hold" else "")
+            hold = f"{float(g.get('hold_s', 0)):g} s" + {"hold": " ⟳", "release": " ↓"}.get(
+                g.get("trigger"), "")
             self.tree.insert("", "end", iid=str(i), values=(
                 "✔" if g.get("enabled", True) else "—", g.get("name", ""),
                 describe_pose(g.get("fingers", {})), GESTURE_HANDS.get(g.get("hand", "any"), "?"),
@@ -588,12 +675,23 @@ class ConfigUI:
                 f.set(None)
         self.gestures = copy.deepcopy(cfg.get("custom_gestures", []))
         self._refresh_tree()
+        acts = (cfg.get("audio") or {}).get("clap_actions") or {}
+        for n, af in self.clap_fields.items():
+            af.set(acts.get(n))
 
     def collect(self) -> dict:
         cfg = copy.deepcopy(self.cfg)
         for f in self.fields:
             _set_path(cfg, f.path, f.get())
         cfg["custom_gestures"] = copy.deepcopy(self.gestures)
+        cfg.setdefault("audio", {})["clap_actions"] = {}
+        for n, af in self.clap_fields.items():
+            action = af.get()
+            if action:
+                err = validate_action(action)
+                if err:
+                    raise ValueError(f"Audio, {n} colpi: {err}")
+            cfg["audio"]["clap_actions"][n] = action
         g = cfg["gestures"]
         if g["pinch_off"] <= g["pinch_on"]:
             raise ValueError("La soglia di rilascio del pinch deve essere maggiore di quella di "
@@ -698,6 +796,61 @@ class ConfigUI:
         self.root.destroy()
 
 
+# ---- scelta di un'azione (tipo + valore) ------------------------------------------------------
+class ActionField:
+    """Tipo di azione + valore, con "nessuna azione". get() -> dict | None."""
+
+    TYPES = {None: NONE, **ACTION_TYPES}
+
+    def __init__(self, parent):
+        self.frame = ttk.Frame(parent)
+        self.type = tk.StringVar()
+        cb = ttk.Combobox(self.frame, textvariable=self.type, values=list(self.TYPES.values()),
+                          state="readonly", width=20)
+        cb.pack(side="left")
+        cb.bind("<<ComboboxSelected>>", lambda e: self._value_widget(""))
+        self.value_box = ttk.Frame(self.frame)
+        self.value_box.pack(side="left", padx=6)
+        self.value = tk.StringVar()
+        self._opts = None
+
+    def _code(self):
+        return {v: k for k, v in self.TYPES.items()}.get(self.type.get())
+
+    def _value_widget(self, value):
+        for w in self.value_box.winfo_children():
+            w.destroy()
+        t = self._code()
+        self._opts = {"app": APP_ACTIONS, "mouse": MOUSE_ACTIONS,
+                      "pad": {b: b for b in PAD_ACTIONS}}.get(t)
+        if t is None:
+            return
+        if self._opts:
+            self.value.set(self._opts.get(value, next(iter(self._opts.values()))))
+            ttk.Combobox(self.value_box, textvariable=self.value, values=list(self._opts.values()),
+                         state="readonly", width=32).pack(side="left")
+        else:
+            self.value.set(value or "")
+            e = ttk.Entry(self.value_box, textvariable=self.value, width=30)
+            e.pack(side="left")
+            Tooltip(e, {"key": "Es. media_play_pause, alt+tab, win+d, f5, media_volume_up",
+                        "run": "Programma o comando da avviare"}.get(t, ""))
+
+    def set(self, action):
+        action = action or {}
+        self.type.set(self.TYPES.get(action.get("type"), NONE))
+        self._value_widget(action.get("value", ""))
+
+    def get(self):
+        t = self._code()
+        if t is None:
+            return None
+        if self._opts:
+            rev = {v: k for k, v in self._opts.items()}
+            return {"type": t, "value": rev.get(self.value.get())}
+        return {"type": t, "value": self.value.get().strip()}
+
+
 # ---- editor di un gesto -----------------------------------------------------------------------
 class GestureEditor:
     def __init__(self, master, gesture: dict, on_ok):
@@ -749,13 +902,18 @@ class GestureEditor:
         row("Tenuta (secondi)", ttk.Spinbox(f, from_=0, to=5, increment=0.1, textvariable=self.hold,
                                             width=8),
             "Per quanto tempo tenere la posa prima che l'azione scatti. 0 = subito.")
-        self.trigger = tk.StringVar(value="hold" if gesture.get("trigger") == "hold" else "once")
+        self.trigger = tk.StringVar(value=gesture.get("trigger") if gesture.get("trigger") in
+                                    ("hold", "release") else "once")
         trig = ttk.Frame(f)
         ttk.Radiobutton(trig, text="Una volta", value="once", variable=self.trigger).pack(side="left")
         ttk.Radiobutton(trig, text="Finché tieni la posa", value="hold",
                         variable=self.trigger).pack(side="left", padx=8)
-        row("Scatta", trig, "Una volta: l'azione viene eseguita una volta per ogni gesto.\n"
-            "Finché tieni: tasto/pulsante/click restano premuti finché mantieni la posa.")
+        ttk.Radiobutton(trig, text="Quando la abbassi", value="release",
+                        variable=self.trigger).pack(side="left")
+        row("Scatta", trig, "Una volta: l'azione viene eseguita appena raggiunta la tenuta.\n"
+            "Finché tieni: tasto/pulsante/click restano premuti finché mantieni la posa.\n"
+            "Quando la abbassi: dopo la tenuta, scatta quando sciogli la posa (comodo per "
+            "l'ascolto: abbassi il dito e batti le mani).")
         modes = ttk.Frame(f)
         self.mode_vars = {}
         for m, lab in MODE_LABELS.items():

@@ -8,6 +8,7 @@ Esempio di voce in configurazione::
       fingers: {thumb: any, index: up, middle: down, ring: down, pinky: up}
       hold_s: 1.0              # tempo di tenuta prima che scatti
       trigger: once            # once = una volta per gesto | hold = premuto finché tieni la posa
+                               # release = una volta, quando abbassi la posa dopo averla tenuta
       modes: [mouse, gamepad, paused]
       action: {type: app, value: toggle_mode}
 """
@@ -49,6 +50,7 @@ class _State:
     last_seen: float = -1.0
     fired: bool = False      # once: già eseguita per questo gesto
     pressed: bool = False    # hold: azione attualmente premuta
+    ready: bool = False      # release: tenuta raggiunta, scatta quando la posa finisce
 
 
 @dataclass
@@ -81,14 +83,18 @@ class GestureEngine:
                 if st.since is None:
                     st.since = now
             elif st.since is not None and now - st.last_seen > GRACE_S:
-                self._end(d, st)
+                self._end(d, st, now)
             if st.since is None:
                 continue
 
             hold = float(d.get("hold_s", 0.5))
             progress = 1.0 if hold <= 0 else min(1.0, (now - st.since) / hold)
-            if progress >= 1.0:
-                if d.get("trigger", "once") == "hold":
+            trigger = d.get("trigger", "once")
+            if progress >= 1.0 and trigger == "release":
+                st.ready = True
+                best = max(best, (1.0, d.get("name", "") + " - abbassa"))
+            elif progress >= 1.0:
+                if trigger == "hold":
                     if not st.pressed:
                         st.pressed = True
                         self.executor.press(d["action"], now)
@@ -99,10 +105,12 @@ class GestureEngine:
                 best = (progress, d.get("name", ""))
         return best
 
-    def _end(self, d: dict, st: _State) -> None:
+    def _end(self, d: dict, st: _State, now: float | None = None) -> None:
         if st.pressed:
             self.executor.release(d["action"])
-        st.since, st.fired, st.pressed = None, False, False
+        if st.ready and now is not None:
+            self.executor.fire(d["action"], now)
+        st.since, st.fired, st.pressed, st.ready = None, False, False, False
 
     def release_all(self) -> None:
         for d, st in zip(self.defs, self._states):

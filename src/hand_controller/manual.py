@@ -15,6 +15,7 @@ PLACEHOLDER = "/*__DATA__*/null"
 
 def manual_data(cfg: dict) -> dict:
     pad = cfg.get("gamepad", {})
+    audio = cfg.get("audio", {})
 
     def hand(h: dict) -> dict:
         return {"stick": h.get("stick"), "fist": h.get("fist"), "pinch": h.get("pinch") or {}}
@@ -33,6 +34,16 @@ def manual_data(cfg: dict) -> dict:
             "action": describe_action(g.get("action", {})),
         } for g in cfg.get("custom_gestures", [])],
         "games": cfg.get("auto_switch", {}).get("game_processes", []),
+        "audio": {
+            "enabled": audio.get("enabled", True),
+            "window_s": audio.get("window_s", 3.0),
+            "actions": {n: describe_action(a) for n, a in (audio.get("clap_actions") or {}).items()
+                        if a},
+            # tenuta del primo gesto attivo che apre l'ascolto (None se non ce n'è)
+            "listen_hold_s": next((g.get("hold_s") for g in cfg.get("custom_gestures", [])
+                                   if g.get("enabled", True)
+                                   and (g.get("action") or {}).get("value") == "listen"), None),
+        },
     }
 
 

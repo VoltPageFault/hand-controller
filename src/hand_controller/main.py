@@ -7,7 +7,10 @@ import sys
 import threading
 import time
 
-from .actions import ActionExecutor
+import numpy as np
+
+from .actions import ActionExecutor, describe_action
+from .audio import ClapListener
 from .backends import NullGamepadBackend, PadState, create_gamepad, create_mouse
 from .backends.null import NullMouseBackend
 from .config import CONFIG_WINDOW_TITLE, config_stamp, load_config
@@ -93,7 +96,12 @@ class App:
             "recenter": lambda: self.mouse_mapper.request_recenter(),
             "open_config": self.open_config,
             "quit": self._request_quit,
+            "listen": self.start_listening,
         }, dry_run=dry_run)
+        self.listener: ClapListener | None = None
+        self._cam_bad_since: float | None = None
+        self._cam_retry = 0.0
+        self.notice: tuple[str, float] | None = None    # messaggio temporaneo nell'overlay
 
         self.mode = cfg.get("startup_mode", "mouse")
         self._last_active_mode = self.mode if self.mode != "paused" else "mouse"
@@ -114,6 +122,62 @@ class App:
         self.analyzers: dict[str, HandAnalyzer] = {}
         self.hotkeys = Hotkeys(cfg.get("hotkeys", {}))
         self.engine = GestureEngine(cfg.get("custom_gestures", []), self.executor)
+        if getattr(self, "listener", None):
+            self.listener.stop()
+        self.listener = ClapListener(cfg.get("audio", {}))
+
+    # ---- webcam che non risponde ------------------------------------------------------------
+    def _camera_problem(self, now: float) -> bool:
+        """Avvisa nell'overlay e riapre la webcam ogni pochi secondi. True se l'ha riaperta."""
+        from .capture import Camera
+
+        if self._cam_bad_since is None:
+            self._cam_bad_since = now
+            return False
+        if now - self._cam_bad_since < 1.5:
+            return False
+        self.notice = ("Webcam non disponibile: forse è usata da un'altra app. Riprovo...", now + 1.0)
+        if now - self._cam_retry < 4.0:
+            return False
+        self._cam_retry = now
+        print("[app] la webcam non manda immagini: la riapro")
+        c = self.cfg["camera"]
+        try:
+            self.camera.close()
+            self.camera = Camera(c["index"], c["width"], c["height"], c["fps"], c["mirror"],
+                                 c.get("exposure"))
+        except Exception as exc:
+            print(f"[app] riapertura non riuscita: {exc}")
+        return True
+
+    # ---- ascolto di battiti e schiocchi -----------------------------------------------------
+    def _notify(self, text: str, seconds: float = 2.0) -> None:
+        print(f"[audio] {text}")
+        self.notice = (text, time.monotonic() + seconds)
+
+    def start_listening(self) -> None:
+        if not self.cfg.get("audio", {}).get("enabled", True):
+            self._notify("ascolto disattivato nella configurazione")
+            return
+        if self.listener.start():
+            print("[audio] in ascolto...")
+        else:
+            self._notify(f"microfono non disponibile: {self.listener.error}", 4.0)
+
+    def _poll_listening(self, now: float) -> None:
+        count = self.listener.poll()
+        if count is None:
+            return
+        if count == 0:
+            self._notify("nessun colpo sentito")
+            return
+        action = (self.cfg.get("audio", {}).get("clap_actions") or {}).get(str(count))
+        if action:
+            self._notify(f"{count} colpi: {describe_action(action)}" if count > 1
+                         else f"1 colpo: {describe_action(action)}")
+            self.executor.fire(action, now)
+        else:
+            self._notify(f"{count} colpi: nessuna azione assegnata")
 
     # ---- configurazione a caldo -------------------------------------------------------------
     def _check_reload(self, now: float) -> None:
@@ -259,11 +323,17 @@ class App:
               f"+/- sensibilità mouse. Hotkey globali: {self.cfg['hotkeys']}")
         try:
             while not self.quit_requested:
-                frame_id, frame = self.camera.read(frame_id)
-                if frame is None:
-                    print("[app] nessun fotogramma dalla webcam")
-                    continue
+                frame_id, frame = self.camera.read(frame_id, timeout=0.5)
                 now = time.monotonic()
+                if frame is None or int(frame.max()) < 10:
+                    # nessuna immagine o immagine nera: webcam occupata da un'altra app?
+                    if self._camera_problem(now):
+                        frame_id = -1
+                    if frame is None:
+                        c = self.cfg["camera"]
+                        frame = np.zeros((c["height"], c["width"], 3), np.uint8)
+                else:
+                    self._cam_bad_since = None
                 fps = 0.9 * fps + 0.1 / max(now - last_t, 1e-6)
                 last_t = now
                 h, w = frame.shape[:2]
@@ -285,6 +355,7 @@ class App:
 
                 self._handle_switches(now)
                 progress, gesture_name = self.engine.update(feats, self.mode, now)
+                self._poll_listening(now)
 
                 if self.mode == "mouse":
                     self.mouse_mapper.update(feats, now, aspect)
@@ -306,7 +377,11 @@ class App:
                                        font_scale=ocfg.get("font_scale", 1.0),
                                        gesture_name=gesture_name,
                                        config_hover=ui["hover"] == "config",
-                                       info_hover=ui["hover"] == "info")
+                                       info_hover=ui["hover"] == "info",
+                                       listening=self.listener.status(now)
+                                       if self.listener.active else None,
+                                       notice=self.notice[0]
+                                       if self.notice and now < self.notice[1] else None)
                     if self.window_dirty:
                         overlay.create_window(window, ocfg, img.shape)
                         cv2.setMouseCallback(window, on_mouse, (img.shape[1], img.shape[0]))
@@ -343,6 +418,7 @@ class App:
                 cv2.destroyAllWindows()
 
     def close(self) -> None:
+        self.listener.stop()
         self.mouse_mapper.release_all()
         self.engine.release_all()
         self.executor.release_all()
@@ -363,6 +439,24 @@ def list_cameras(max_index: int = 6) -> None:
             print(f"  webcam {i}: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x"
                   f"{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
         cap.release()
+
+
+def already_running() -> bool:
+    """True se un'altra istanza è già aperta (Windows); in quel caso la porta in primo piano."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    k32, user32 = ctypes.windll.kernel32, ctypes.windll.user32
+    # il mutex resta di proprietà del processo finché è aperto
+    k32.CreateMutexW.restype = ctypes.c_void_p
+    main._mutex = k32.CreateMutexW(None, False, "Local\\HandControllerSingleInstance")
+    if k32.GetLastError() != 183:          # ERROR_ALREADY_EXISTS
+        return False
+    hwnd = user32.FindWindowW(None, "Hand Controller")
+    if hwnd:
+        user32.ShowWindow(hwnd, 9)         # SW_RESTORE
+        user32.SetForegroundWindow(hwnd)
+    return True
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -388,6 +482,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.settings:
         from .config_ui import main as settings_main
         settings_main()
+        return
+    if already_running():
+        print("[app] Hand Controller è già aperto: lo porto in primo piano.")
         return
     cfg = load_config(args.config)
     if args.camera is not None:

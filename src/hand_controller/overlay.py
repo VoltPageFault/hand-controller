@@ -84,7 +84,8 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
          fps: float, pad: PadState | None, mouse_region, switch_progress: float,
          foreground: str | None, mouse_info: str | None = None,
          out_width: int | None = None, font_scale: float = 1.0, gesture_name: str = "",
-         config_hover: bool = False, info_hover: bool = False) -> np.ndarray:
+         config_hover: bool = False, info_hover: bool = False,
+         listening: tuple[float, int] | None = None, notice: str | None = None) -> np.ndarray:
     if out_width and out_width != frame.shape[1]:
         out_h = int(round(frame.shape[0] * out_width / frame.shape[1]))
         img = cv2.resize(frame, (out_width, out_h), interpolation=cv2.INTER_AREA)
@@ -143,6 +144,21 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
         if pad.buttons:
             P.text(" ".join(sorted(pad.buttons)), (w // 2, base + g(32)), (0, 255, 0), size=0.75,
                    align="center", bold=True)
+    if listening is not None:
+        # finestra di ascolto: barra che si svuota + un pallino per ogni colpo sentito
+        left, hits = listening
+        cy = h // 2
+        cv2.rectangle(img, (0, cy - 26), (w, cy + 30), (30, 30, 30), -1)
+        P.text("IN ASCOLTO", (w // 2, cy - 4), (80, 230, 255), size=0.7, align="center", bold=True)
+        bw = int((w - 40) * left)
+        cv2.rectangle(img, (20, cy + 8), (20 + bw, cy + 13), (80, 230, 255), -1)
+        for i in range(hits):
+            cv2.circle(img, (w // 2 - (hits - 1) * 9 + i * 18, cy + 22), 5, (31, 138, 255), -1,
+                       cv2.LINE_AA)
+    elif notice:
+        cy = h // 2
+        cv2.rectangle(img, (0, cy - 16), (w, cy + 12), (30, 30, 30), -1)
+        P.text(notice[:40], (w // 2, cy + 4), (255, 255, 255), size=0.5, align="center")
     _button(P, info_button_rect(w, h), "info", info_hover)
     _button(P, config_button_rect(w, h), "config", config_hover)
     return img

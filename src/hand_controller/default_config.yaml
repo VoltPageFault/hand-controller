@@ -30,6 +30,7 @@ gestures:
 # Gesti personalizzati: una posa della mano tenuta per hold_s secondi esegue un'azione.
 # fingers: per ogni dito up (teso) | down (piegato) | any (indifferente)
 # trigger: once = una volta per gesto | hold = l'azione resta premuta finché tieni la posa
+#          release = una volta, quando abbassi la posa dopo averla tenuta per hold_s
 # action.type: app | key | mouse | pad | run   (vedi actions.py per i valori possibili)
 custom_gestures:
   - name: Corna = cambia modalità
@@ -56,14 +57,31 @@ custom_gestures:
     trigger: once
     modes: [mouse]
     action: {type: key, value: alt+tab}
-  - name: Indice sinistro = RB
-    enabled: false
-    hand: Left
+  - name: Indice alzato = ascolta
+    enabled: true
+    hand: any
     fingers: {thumb: any, index: up, middle: down, ring: down, pinky: down}
-    hold_s: 0.0
-    trigger: hold
-    modes: [gamepad]
-    action: {type: pad, value: RB}
+    hold_s: 2.0
+    trigger: once
+    modes: [mouse, gamepad, paused]
+    action: {type: app, value: listen}
+
+# Battiti di mani e schiocchi di dita. Il microfono è spento finché un gesto con l'azione
+# "listen" (default: indice alzato per 2 s) non apre la finestra di ascolto.
+# Dentro la finestra si contano i colpi secchi; il numero di colpi sceglie l'azione.
+audio:
+  enabled: true
+  device: ""                # vuoto = microfono predefinito di sistema
+  window_s: 3.0             # durata massima della finestra di ascolto
+  end_after_silence_s: 1.0  # dopo l'ultimo colpo, questo silenzio chiude subito la finestra
+  min_level_db: -15         # volume minimo di un colpo (0 = massimo del microfono)
+  jump_db: 20               # salita improvvisa minima in 10 ms: distingue i colpi dalla voce
+  rise_db: 25               # quanto sopra il rumore di fondo deve arrivare il colpo
+  min_gap_ms: 150           # distanza minima tra due colpi (l'eco non conta doppio)
+  clap_actions:             # numero di colpi -> azione (null = nessuna)
+    "1": {type: key, value: media_play_pause}
+    "2": {type: app, value: toggle_mode}
+    "3": {type: app, value: toggle_pause}
 
 startup_mode: mouse   # mouse | gamepad | paused
 

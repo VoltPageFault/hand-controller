@@ -89,6 +89,13 @@ Le impostazioni utente sono in `%APPDATA%\hand-controller\config.yaml` (Linux:
 `~/.config/hand-controller/config.yaml`) e contengono solo le differenze rispetto a
 `src/hand_controller/default_config.yaml`. Con **Esporta/Importa** si salvano e caricano profili.
 
+### Battiti e schiocchi
+
+Alza l'indice per 2 secondi: compare "IN ASCOLTO" e per 3 secondi il microfono ascolta. Batti le mani o
+schiocca le dita: 1, 2 o 3 colpi eseguono tre azioni diverse (default: play/pausa, cambia
+modalità, pausa). Fuori da quella finestra il microfono è spento; l'audio non viene mai salvato.
+Tutto si regola in Configurazione › Audio, con il pulsante "Prova microfono".
+
 ### Gesti personalizzati
 
 Una posa della mano (ogni dito teso / piegato / indifferente) tenuta per un certo tempo esegue

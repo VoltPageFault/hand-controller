@@ -228,6 +228,7 @@ footer div { max-width: 1180px; margin: 0 auto; }
       <li><a href="#mouse">Mouse</a></li>
       <li><a href="#gamepad">Gamepad</a></li>
       <li><a href="#gesti">Gesti personalizzati</a></li>
+      <li><a href="#audio">Battiti e schiocchi</a></li>
       <li><a href="#tasti">Tasti</a></li>
       <li><a href="#config">Configurazione</a></li>
       <li><a href="#consigli">Consigli e problemi</a></li>
@@ -293,6 +294,18 @@ footer div { max-width: 1180px; margin: 0 auto; }
       <h3>I tuoi gesti</h3>
       <div class="gestures wide" id="gestureList"></div>
       <p class="muted" style="margin-top:16px">Le pose valgono solo senza pinch attivi. Una posa con tutte le dita piegate assomiglia al pugno, che centra il mouse e preme il grilletto: meglio lasciare almeno un dito teso.</p>
+    </section>
+
+    <section id="audio">
+      <h2>Battiti e schiocchi</h2>
+      <p>Batti le mani o schiocca le dita per dare un comando. Il microfono resta spento finché non lo chiami tu, così rumori, voce e audio dei giochi non fanno scattare nulla.</p>
+      <ol class="steps">
+        <li><strong>Alza l'indice</strong>Come quando chiedi a qualcuno di ascoltarti. Tienilo su <span id="listenHold">2 secondi</span>: nell'overlay la barra gialla si riempie.</li>
+        <li><strong>Abbassalo quando compare «IN ASCOLTO»</strong>Una barra si svuota: hai <span id="listenWindow">3 secondi</span>.</li>
+        <li><strong>Batti le mani o schiocca le dita</strong>Ogni colpo accende un pallino. Battiti e schiocchi valgono uguale: conta solo quanti sono.</li>
+      </ol>
+      <table><thead><tr><th>Colpi</th><th>Cosa succede</th></tr></thead><tbody id="clapTable"></tbody></table>
+      <p class="muted" style="margin-top:16px">Se i colpi non vengono contati, prova «Prova microfono» in Configurazione › Audio: mostra il volume di ogni colpo sentito.</p>
     </section>
 
     <section id="tasti">
@@ -589,6 +602,16 @@ D.gestures.forEach(g => {
   card.appendChild(txt);
   glist.appendChild(card);
 });
+
+const AU = D.audio || {enabled: true, window_s: 3, actions: {"1": "Tasti media_play_pause",
+  "2": "Cambia modalità mouse/gamepad", "3": "Pausa / riprendi"}, listen_hold_s: 2};
+const sec = v => `${String(v).replace(".", ",")} secondi`;
+document.getElementById("listenWindow").textContent = sec(AU.window_s);
+if (AU.listen_hold_s != null) document.getElementById("listenHold").textContent = sec(AU.listen_hold_s);
+document.getElementById("clapTable").innerHTML = AU.enabled
+  ? ["1", "2", "3"].map(n => `<tr><td class="what">${n === "1" ? "1 colpo" : n + " colpi"}</td><td>${
+      AU.actions[n] ? AU.actions[n].replace(/[<>&]/g, "") : '<span class="muted">nessuna azione</span>'}</td></tr>`).join("")
+  : '<tr><td colspan="2" class="muted">L\'ascolto è disattivato. Attivalo da Configurazione › Audio.</td></tr>';
 
 document.getElementById("cfgPath").textContent = D.configPath;
 document.getElementById("gamesLine").innerHTML = D.games.length

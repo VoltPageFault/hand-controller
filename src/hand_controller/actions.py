@@ -2,7 +2,8 @@
 
 Un'azione è un dizionario ``{"type": ..., "value": ...}``:
 
-- ``app``   : toggle_mode | mouse_mode | gamepad_mode | toggle_pause | recenter | open_config | quit
+- ``app``   : toggle_mode | mouse_mode | gamepad_mode | toggle_pause | recenter | listen |
+              open_config | quit
 - ``key``   : tasto o combinazione, es. ``alt+tab``, ``ctrl+shift+esc``, ``win+d``, ``media_volume_up``
 - ``mouse`` : left | right | middle | double
 - ``pad``   : pulsante del controller (A, B, X, Y, LB, RB, LT, RT, BACK, START, LS, RS, DPAD_UP, ...)
@@ -23,6 +24,7 @@ APP_ACTIONS = {
     "gamepad_mode": "Passa al gamepad",
     "toggle_pause": "Pausa / riprendi",
     "recenter": "Ricentra il mouse",
+    "listen": "Ascolta battiti e schiocchi",
     "open_config": "Apri la configurazione",
     "quit": "Esci dall'app",
 }
@@ -39,6 +41,12 @@ KEY_ALIASES = {"win": "cmd", "windows": "cmd", "control": "ctrl", "escape": "esc
                "volume_down": "media_volume_down", "mute": "media_volume_mute",
                "play_pause": "media_play_pause", "next": "media_next", "previous": "media_previous",
                "spazio": "space", "invio": "enter"}
+
+
+KEY_LABELS = {"media_play_pause": "Play / pausa (musica e video)", "media_next": "Brano successivo",
+              "media_previous": "Brano precedente", "media_volume_up": "Volume su",
+              "media_volume_down": "Volume giù", "media_volume_mute": "Muto",
+              "win+d": "Mostra il desktop", "alt+tab": "Cambia finestra (Alt+Tab)"}
 
 
 def parse_keys(combo: str) -> list:
@@ -89,7 +97,7 @@ def describe_action(action: dict) -> str:
     if t == "pad":
         return f"Gamepad {v}"
     if t == "key":
-        return f"Tasti {v}"
+        return KEY_LABELS.get(str(v).lower(), f"Tasti {v}")
     if t == "run":
         return f"Avvia {v}"
     return "—"
