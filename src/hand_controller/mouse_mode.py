@@ -43,6 +43,11 @@ class MouseMapper:
         self._half: np.ndarray | None = None     # semi-larghezza/altezza del rettangolo
         self._aspect = 1.0
         self.recentering = False
+        self._recenter_request = False
+
+    def request_recenter(self) -> None:
+        """Ricentra al prossimo frame con la mano visibile (comando 'recenter' dei gesti)."""
+        self._recenter_request = True
 
     # ---- utilità per overlay e regolazioni ------------------------------------------------
     def current_region(self) -> np.ndarray | None:
@@ -142,7 +147,10 @@ class MouseMapper:
 
         if self.motion == "anchor":
             was = self.recentering
-            self.recentering = f.curl >= self.recenter_curl
+            # pugno vero: quattro dita piegate (non basta la chiusura media, es. indice teso)
+            fist = f.curl >= self.recenter_curl and (f.fist if f.extended else True)
+            self.recentering = fist or self._recenter_request
+            self._recenter_request = False
             if was and not self.recentering:
                 # apertura del pugno: le dita che si distendono spostano un po' il palmo;
                 # breve blocco per non far partire il cursore dal centro
@@ -157,6 +165,9 @@ class MouseMapper:
                 if action in BUTTON_ACTIONS and action not in self._held:
                     self.mouse.press(action)
                     self._held.add(action)
+                elif action == "double":
+                    self.mouse.click("left")
+                    self.mouse.click("left")
                 elif action == "scroll":
                     self._scroll_ref = float(f.palm[1])
                     self._scroll_acc = 0.0

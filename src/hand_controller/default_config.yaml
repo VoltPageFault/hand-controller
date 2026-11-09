@@ -26,13 +26,52 @@ gestures:
   pinch_off: 0.42     # isteresi: sopra questa soglia il pinch si rilascia
   curl_open: 1.75     # rapporto dita-polso a mano aperta
   curl_closed: 1.10   # rapporto dita-polso a pugno chiuso
-  mode_switch_hold_s: 1.0   # tempo di mantenimento del gesto "corna" per cambiare modalità
+
+# Gesti personalizzati: una posa della mano tenuta per hold_s secondi esegue un'azione.
+# fingers: per ogni dito up (teso) | down (piegato) | any (indifferente)
+# trigger: once = una volta per gesto | hold = l'azione resta premuta finché tieni la posa
+# action.type: app | key | mouse | pad | run   (vedi actions.py per i valori possibili)
+custom_gestures:
+  - name: Corna = cambia modalità
+    enabled: true
+    hand: any
+    fingers: {thumb: any, index: up, middle: down, ring: down, pinky: up}
+    hold_s: 1.0
+    trigger: once
+    modes: [mouse, gamepad, paused]
+    action: {type: app, value: toggle_mode}
+  - name: V = pausa / riprendi
+    enabled: false
+    hand: any
+    fingers: {thumb: any, index: up, middle: up, ring: down, pinky: down}
+    hold_s: 1.0
+    trigger: once
+    modes: [mouse, gamepad, paused]
+    action: {type: app, value: toggle_pause}
+  - name: Telefono = Alt+Tab
+    enabled: false
+    hand: Right
+    fingers: {thumb: up, index: down, middle: down, ring: down, pinky: up}
+    hold_s: 0.5
+    trigger: once
+    modes: [mouse]
+    action: {type: key, value: alt+tab}
+  - name: Indice sinistro = RB
+    enabled: false
+    hand: Left
+    fingers: {thumb: any, index: up, middle: down, ring: down, pinky: down}
+    hold_s: 0.0
+    trigger: hold
+    modes: [gamepad]
+    action: {type: pad, value: RB}
 
 startup_mode: mouse   # mouse | gamepad | paused
 
 hotkeys:              # tasti globali (funzionano anche col gioco in primo piano)
   toggle_mode: f9
   toggle_pause: f10
+  quit: ctrl+f10        # chiude l'app da qualsiasi finestra
+  open_config: ""       # vuoto = nessun tasto
 
 auto_switch:
   enabled: true
@@ -61,7 +100,7 @@ mouse:
   active_region: [0.25, 0.20, 0.75, 0.65]
   click_freeze_ms: 150    # blocca il cursore subito dopo un pinch per evitare click "spostati"
   scroll_speed: 40        # tacche di scroll per unità di movimento verticale
-  bindings:               # pinch pollice + dito -> azione
+  bindings:               # pinch pollice + dito -> left | right | middle | double | scroll | null
     index: left           # tenuto premuto = drag
     middle: right
     ring: scroll          # tieni premuto e muovi la mano su/giù

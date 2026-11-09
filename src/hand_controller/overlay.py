@@ -1,6 +1,8 @@
 """Finestra di debug: mani tracciate, modalità corrente e stato del controller."""
 from __future__ import annotations
 
+import unicodedata
+
 import cv2
 import numpy as np
 
@@ -31,6 +33,8 @@ class _Painter:
         return max(1, int(round(v * self.k)))
 
     def text(self, s, org, color=(255, 255, 255), size=0.5, align="left", bold=False):
+        # il font di OpenCV è solo ASCII: "modalità" -> "modalita"
+        s = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode("ascii")
         scale = size * self.fs
         th = 2 if bold else 1
         (tw, tht), _ = cv2.getTextSize(s, FONT, scale, th)
@@ -56,10 +60,25 @@ class _Painter:
         self.text(label, (center[0], center[1] + r + 18), size=0.55, align="center")
 
 
+def config_button_rect(w: int, h: int) -> tuple[int, int, int, int]:
+    """Rettangolo (x0, y0, x1, y1) del pulsante "config", in basso a destra."""
+    bw, bh = 62, 22
+    return w - bw - 4, h - bh - 4, w - 4, h - 4
+
+
+def _config_button(P: "_Painter", hover: bool) -> None:
+    x0, y0, x1, y1 = config_button_rect(P.w, P.h)
+    fill = (90, 90, 90) if hover else (45, 45, 45)
+    cv2.rectangle(P.img, (x0, y0), (x1, y1), fill, -1)
+    cv2.rectangle(P.img, (x0, y0), (x1, y1), (230, 230, 230) if hover else (160, 160, 160), 1)
+    P.text("config", ((x0 + x1) // 2, y1 - 6), (255, 255, 255), size=0.45, align="center")
+
+
 def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], mode: str,
          fps: float, pad: PadState | None, mouse_region, switch_progress: float,
          foreground: str | None, mouse_info: str | None = None,
-         out_width: int | None = None, font_scale: float = 1.0) -> np.ndarray:
+         out_width: int | None = None, font_scale: float = 1.0, gesture_name: str = "",
+         config_hover: bool = False) -> np.ndarray:
     if out_width and out_width != frame.shape[1]:
         out_h = int(round(frame.shape[0] * out_width / frame.shape[1]))
         img = cv2.resize(frame, (out_width, out_h), interpolation=cv2.INTER_AREA)
@@ -96,13 +115,16 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
     if switch_progress > 0:
         cv2.rectangle(img, (6, y - 6), (6 + int((w // 2) * switch_progress), y), (0, 255, 255), -1)
         y += 10
+        if gesture_name:
+            P.text(gesture_name, (6, y + 8), (0, 255, 255), size=0.45)
+            y += 18
     if mode == "mouse" and mouse_info:
         P.text(mouse_info, (6, y + 8), mcolor, size=0.6, bold=True)
     if foreground and mode != "gamepad":
-        P.text(foreground, (6, h - 6), (220, 220, 220), size=0.5)
+        P.text(foreground[:22], (6, h - 8), (220, 220, 220), size=0.5)
 
     if mode == "gamepad" and pad is not None:
-        base = h - g(70) - 18
+        base = h - g(70) - 44   # spazio per il pulsante config
         P.stick((g(50) + 4, base), pad.lx, pad.ly, "L")
         P.stick((w - g(50) - 4, base), pad.rx, pad.ry, "R")
         for i, (name, v) in enumerate((("LT", pad.lt), ("RT", pad.rt))):
@@ -113,8 +135,9 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
             cv2.rectangle(img, (x, yb - int(bh * v)), (x + bw, yb), (0, 200, 255), -1)
             P.text(name, (x + bw // 2, yb + 18), size=0.5, align="center")
         if pad.buttons:
-            P.text(" ".join(sorted(pad.buttons)), (w // 2, h - 8), (0, 255, 0), size=0.75,
+            P.text(" ".join(sorted(pad.buttons)), (w // 2, base + g(32)), (0, 255, 0), size=0.75,
                    align="center", bold=True)
+    _config_button(P, config_hover)
     return img
 
 

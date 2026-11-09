@@ -74,11 +74,29 @@ hand-controller --config profiles/esempio.yaml
 - **Ricentrare lo stick**: lo stick si azzera nel punto in cui la mano entra nell'inquadratura;
   togli la mano e rimettila.
 - **Cambio modalità**: gesto "corna" 🤘 (indice + mignolo tesi) per 1 secondo, oppure **F9**.
-- **Pausa** (nessun input generato): **F10**.
+- **Pausa** (nessun input generato): **F10**. **Chiudi l'app**: **Ctrl+F10** (da qualsiasi finestra).
 - **Automatico**: se l'eseguibile in primo piano è in `auto_switch.game_processes` si passa a
   gamepad, altrimenti a mouse.
 
-Tutte le mappature si cambiano da YAML (vedi `src/hand_controller/default_config.yaml`).
+### Configurazione
+
+Pulsante **config** in basso a destra nell'overlay (o tasto **c**, o `hand-controller --settings`):
+si apre una finestra con tutte le impostazioni (generale, mouse, gamepad, gesti personalizzati,
+riconoscimento, webcam, overlay). **Applica** salva e l'app in esecuzione si aggiorna subito.
+**Ripristina default** riporta tutto ai valori originali.
+
+Le impostazioni utente sono in `%APPDATA%\hand-controller\config.yaml` (Linux:
+`~/.config/hand-controller/config.yaml`) e contengono solo le differenze rispetto a
+`src/hand_controller/default_config.yaml`. Con **Esporta/Importa** si salvano e caricano profili.
+
+### Gesti personalizzati
+
+Una posa della mano (ogni dito teso / piegato / indifferente) tenuta per un certo tempo esegue
+un'azione: comando dell'app (cambia modalità, pausa, ricentra, configurazione, esci), tasto o
+combinazione (`alt+tab`, `win+d`, `media_volume_up`…), click del mouse, pulsante del gamepad
+(es. croce direzionale, RB) o avvio di un programma. L'azione può scattare una volta o restare
+premuta finché si tiene la posa. Le "corna" per il cambio modalità sono il primo gesto della lista;
+altri esempi sono presenti ma disattivati.
 
 ## Test
 

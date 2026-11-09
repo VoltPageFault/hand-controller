@@ -21,7 +21,30 @@ class HandFeatures:
     pinches: dict[str, bool] = field(default_factory=dict)
     pressed: set[str] = field(default_factory=set)   # pinch iniziati in questo frame
     released: set[str] = field(default_factory=set)  # pinch terminati in questo frame
-    horns: bool = False         # gesto "corna" (indice + mignolo tesi): cambio modalità
+    horns: bool = False         # gesto "corna" (indice + mignolo tesi)
+    # dita tese: thumb, index, middle, ring, pinky -> True se il dito è disteso
+    extended: dict[str, bool] = field(default_factory=dict)
+
+    @property
+    def fist(self) -> bool:
+        """Pugno: le quattro dita lunghe tutte piegate (il pollice non conta)."""
+        return bool(self.extended) and not any(self.extended.get(n) for n in FINGER_TIPS)
+
+
+FINGERS = ("thumb", "index", "middle", "ring", "pinky")
+
+
+def matches_pose(f: HandFeatures, fingers: dict[str, str]) -> bool:
+    """Una posa è un dizionario dito -> "up" | "down" | "any". Nessun pinch deve essere attivo."""
+    if any(f.pinches.values()):
+        return False
+    for name in FINGERS:
+        want = (fingers or {}).get(name, "any")
+        if want == "any":
+            continue
+        if f.extended.get(name, False) != (want == "up"):
+            return False
+    return True
 
 
 def _scaled(lm: np.ndarray, aspect: float) -> np.ndarray:
@@ -67,6 +90,10 @@ class HandAnalyzer:
             self._pinch_state[name] = now
 
         extended = {n: tip_wrist[n] > pip_wrist[n] * 1.15 for n in FINGER_TIPS}
+        # pollice teso: punta lontana dalla nocca dell'indice e più esterna dell'articolazione
+        thumb_out = np.linalg.norm(p[THUMB_TIP] - p[5]) / size
+        extended["thumb"] = bool(thumb_out > 0.6 and
+                                 np.linalg.norm(p[THUMB_TIP] - p[17]) > np.linalg.norm(p[3] - p[17]))
         horns = (extended["index"] and extended["pinky"]
                  and not extended["middle"] and not extended["ring"]
                  and not any(self._pinch_state.values()))
@@ -74,4 +101,4 @@ class HandAnalyzer:
         palm = landmarks[PALM_POINTS, :2].mean(axis=0)
         return HandFeatures(label=label, palm=palm, size=size, curl=curl,
                             pinches=dict(self._pinch_state), pressed=pressed,
-                            released=released, horns=horns)
+                            released=released, horns=horns, extended=extended)
