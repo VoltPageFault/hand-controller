@@ -44,7 +44,19 @@ auto_switch:
 
 mouse:
   hand: right         # right | left | any
-  # rettangolo del fotogramma (x0, y0, x1, y1 normalizzati) mappato sull'intero schermo:
+  # anchor   = pugno: il cursore va al centro dello schermo e la mano diventa il centro del
+  #            movimento; intorno c'è un rettangolo grande quanto la mano = intero monitor
+  #            (piccoli movimenti del polso, gomito appoggiato). Il rettangolo è nell'overlay.
+  # absolute = il rettangolo fisso active_region del fotogramma corrisponde all'intero schermo.
+  motion: anchor
+  anchor:
+    span: 1.0             # larghezza del rettangolo in "dimensioni mano" (polso-nocca del medio);
+                          # più piccolo = più sensibile. Regolabile con +/- nell'overlay
+    recenter_curl: 0.65   # chiusura della mano oltre cui il pugno ricentra
+    smoothing:            # filtro sul cursore: min_cutoff basso = più fermo, beta alto = più reattivo
+      min_cutoff: 0.8
+      beta: 4.0
+  # [solo absolute] rettangolo del fotogramma (x0, y0, x1, y1 normalizzati) mappato sull'intero schermo:
   # più piccolo = meno movimento del braccio per attraversare lo schermo
   active_region: [0.25, 0.20, 0.75, 0.65]
   click_freeze_ms: 150    # blocca il cursore subito dopo un pinch per evitare click "spostati"

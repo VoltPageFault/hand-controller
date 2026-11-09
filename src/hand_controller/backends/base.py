@@ -54,6 +54,10 @@ class MouseBackend(ABC):
     @abstractmethod
     def scroll(self, dy: int) -> None: ...      # positivo = su
 
+    def position(self) -> tuple[int, int] | None:
+        """Posizione attuale del cursore, se il backend sa leggerla."""
+        return None
+
     def click(self, button: str) -> None:
         self.press(button)
         self.release(button)

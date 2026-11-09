@@ -49,6 +49,10 @@ class PynputMouseBackend(MouseBackend):
     def move_to(self, x: int, y: int) -> None:
         self._mouse.position = (x, y)
 
+    def position(self) -> tuple[int, int] | None:
+        x, y = self._mouse.position
+        return int(x), int(y)
+
     def press(self, button: str) -> None:
         self._mouse.press(self._buttons[button])
 

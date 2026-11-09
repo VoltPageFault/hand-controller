@@ -100,17 +100,66 @@ def test_gamepad_buttons_and_trigger():
 
 def test_mouse_mapping_click_and_drag():
     mouse = NullMouseBackend((1000, 500))
-    mm = MouseMapper(load_config()["mouse"], mouse)
+    cfg = deep_merge(load_config()["mouse"], {"motion": "absolute"})
+    mm = MouseMapper(cfg, mouse)
     x0, y0, x1, y1 = mm.region
     f = _feat("Right", [(x0 + x1) / 2, (y0 + y1) / 2])
     mm.update({"Right": f}, 0.0)
-    assert mouse.position == pytest.approx((500, 250), abs=1)
+    assert mouse.position() == pytest.approx((500, 250), abs=1)
 
     f = _feat("Right", [x0, y0], pinches={"index": True})
     f.pressed = {"index"}
     mm.update({"Right": f}, 1.0)
     assert ("press", "left") in mouse.events
-    assert mouse.position == pytest.approx((500, 250), abs=1)   # congelato subito dopo il pinch
+    assert mouse.position() == pytest.approx((500, 250), abs=1)   # congelato subito dopo il pinch
 
     mm.update({}, 2.0)                                          # mano persa -> rilascia
     assert mouse.events[-1] == ("release", "left")
+
+
+def _anchor_mapper(size=(1600, 900)):
+    mouse = NullMouseBackend(size)
+    mouse.position_ = (300, 200)
+    cfg = deep_merge(load_config()["mouse"], {"motion": "anchor"})
+    return mouse, MouseMapper(cfg, mouse)
+
+
+def _run(mm, palm, frames, t0=0.0, curl=0.0, fps=30):
+    t = t0
+    for _ in range(frames):
+        mm.update({"Right": _feat("Right", palm, curl=curl)}, t)
+        t += 1 / fps
+    return t
+
+
+def test_anchor_entry_keeps_cursor_in_place():
+    mouse, mm = _anchor_mapper()
+    _run(mm, [0.4, 0.6], 20)
+    assert mouse.position() == pytest.approx((300, 200), abs=2)
+
+
+def test_anchor_fist_centers_then_hand_size_rect_spans_screen():
+    mouse, mm = _anchor_mapper()
+    t = _run(mm, [0.5, 0.5], 5, curl=1.0)                     # pugno -> centro
+    assert mouse.position() == (800, 450) and mm.recentering
+    t = _run(mm, [0.5, 0.5], 10, t0=t)                        # mano aperta: resta al centro
+    assert mouse.position() == pytest.approx((800, 450), abs=1)
+    # mezza "mano" (size 0.1, span 1) a destra = bordo destro dello schermo
+    _run(mm, [0.55, 0.5], 60, t0=t)
+    x, y = mouse.position()
+    assert x == pytest.approx(1599, abs=3) and y == pytest.approx(450, abs=1)
+    x0, y0, x1, y1 = mm.current_region()
+    assert x1 - x0 == pytest.approx(0.1) and (y1 - y0) == pytest.approx(0.1 * 900 / 1600)
+
+
+def test_anchor_smoothing_holds_still_on_jitter():
+    mouse, mm = _anchor_mapper()
+    t = _run(mm, [0.5, 0.5], 5, curl=1.0)
+    t = _run(mm, [0.5, 0.5], 10, t0=t)
+    rng = np.random.default_rng(1)
+    xs = []
+    for _ in range(60):
+        mm.update({"Right": _feat("Right", [0.5 + rng.normal(0, 0.0005), 0.5])}, t)
+        t += 1 / 30
+        xs.append(mouse.position()[0])
+    assert np.std(xs[10:]) < 4          # senza filtro sarebbe ~8 px

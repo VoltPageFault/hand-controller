@@ -26,7 +26,7 @@ def _stick(img, center, x, y, label, r=32):
 
 def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], mode: str,
          fps: float, pad: PadState | None, mouse_region, switch_progress: float,
-         foreground: str | None) -> np.ndarray:
+         foreground: str | None, mouse_info: str | None = None) -> np.ndarray:
     img = frame.copy()
     h, w = img.shape[:2]
 
@@ -51,6 +51,11 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
 
     _text(img, f"MODE: {mode.upper()}", (10, 24), MODE_COLORS.get(mode, (255, 255, 255)), 0.7)
     _text(img, f"{fps:4.1f} fps", (w - 90, 24))
+    if mode == "mouse" and mouse_info:
+        _text(img, mouse_info, (10, 62), MODE_COLORS["mouse"])
+    if mode == "mouse" and mouse_region is not None:
+        cx, cy = int((mouse_region[0] + mouse_region[2]) / 2 * w), int((mouse_region[1] + mouse_region[3]) / 2 * h)
+        cv2.drawMarker(img, (cx, cy), MODE_COLORS["mouse"], cv2.MARKER_CROSS, 12, 1)
     if foreground:
         _text(img, foreground, (10, h - 10), scale=0.45)
     if switch_progress > 0:

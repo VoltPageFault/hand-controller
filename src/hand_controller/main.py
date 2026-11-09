@@ -140,7 +140,8 @@ class App:
 
         frame_id, fps, last_t = -1, 0.0, time.monotonic()
         window = "Hand Controller"
-        print("[app] avviato. Overlay: q/ESC esci, m cambia modalità, p pausa. "
+        print("[app] avviato. Overlay: q/ESC esci, m cambia modalità, p pausa, "
+              "+/- sensibilità mouse. "
               f"Hotkey globali: {self.cfg['hotkeys']}")
         try:
             while True:
@@ -170,20 +171,31 @@ class App:
                 progress = self._handle_switches(feats, now)
 
                 if self.mode == "mouse":
-                    self.mouse_mapper.update(feats, now)
+                    self.mouse_mapper.update(feats, now, aspect)
                 elif self.mode == "gamepad":
                     self.pad_state = self.pad_mapper.update(feats)
                     self.gamepad.send(self.pad_state)
 
                 if show_overlay:
+                    mm = self.mouse_mapper
+                    region, mouse_info = mm.current_region(), None
+                    if mm.motion == "anchor":
+                        mouse_info = f"AREA {mm.span:.2f} mani" + (
+                            "  [CENTRO]" if mm.recentering else
+                            "" if region is not None else "  pugno = centra")
                     img = overlay.draw(frame, hands, feats, self.mode, fps, self.pad_state,
-                                       self.mouse_mapper.region, progress, self._fg_name)
+                                       region, progress, self._fg_name, mouse_info)
                     cv2.imshow(window, img)
                     key = cv2.waitKey(1) & 0xFF
                     if key in (27, ord("q")):
                         break
                     if key == ord("m"):
                         self._toggle_active_mode()
+                    elif key in (ord("+"), ord("=")):
+                        # + = più sensibile = rettangolo più piccolo
+                        print(f"[mouse] area {self.mouse_mapper.adjust_span(1 / 1.15):.2f} mani")
+                    elif key == ord("-"):
+                        print(f"[mouse] area {self.mouse_mapper.adjust_span(1.15):.2f} mani")
                     elif key == ord("p"):
                         self.set_mode(self._last_active_mode if self.mode == "paused" else "paused")
         except KeyboardInterrupt:

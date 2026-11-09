@@ -59,13 +59,18 @@ hand-controller --config profiles/esempio.yaml
 
 | | Modalità **mouse** (mano destra) | Modalità **gamepad** |
 |---|---|---|
-| Movimento | il palmo muove il cursore (rettangolo nell'overlay = schermo intero) | mano sinistra = stick sinistro, mano destra = stick destro |
+| Movimento | il palmo muove il cursore come un trackpad (vedi sotto) | mano sinistra = stick sinistro, mano destra = stick destro |
 | Pollice + indice | click sinistro (tieni premuto = drag) | sx: **LB** · dx: **A** |
 | Pollice + medio | click destro | sx: **Back** · dx: **B** |
 | Pollice + anulare | tieni premuto e muovi su/giù = scroll | sx: **LS** · dx: **X** |
 | Pollice + mignolo | click centrale | sx: **Start** · dx: **Y** |
-| Pugno | — | sx: **LT** · dx: **RT** (analogico) |
+| Pugno | cursore al centro dello schermo e nuovo centro del movimento | sx: **LT** · dx: **RT** (analogico) |
 
+- **Centrare il mouse** (`mouse.motion: anchor`, default): chiudi il pugno e il cursore va al centro
+  dello schermo; la mano in quel punto diventa il centro del movimento. Intorno c'è un rettangolo
+  largo quanto la mano (disegnato nell'overlay) che corrisponde all'intero monitor: bastano piccoli
+  movimenti del polso col gomito appoggiato. **+ / -** nell'overlay rimpiccioliscono o allargano il
+  rettangolo. Con `motion: absolute` il rettangolo è fisso nel fotogramma (`active_region`).
 - **Ricentrare lo stick**: lo stick si azzera nel punto in cui la mano entra nell'inquadratura;
   togli la mano e rimettila.
 - **Cambio modalità**: gesto "corna" 🤘 (indice + mignolo tesi) per 1 secondo, oppure **F9**.

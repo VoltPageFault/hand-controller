@@ -19,14 +19,17 @@ class NullMouseBackend(MouseBackend):
 
     def __init__(self, size: tuple[int, int] = (1920, 1080)):
         self._size = size
-        self.position = (0, 0)
+        self.position_ = (0, 0)
         self.events: list[tuple] = []
 
     def screen_size(self) -> tuple[int, int]:
         return self._size
 
     def move_to(self, x: int, y: int) -> None:
-        self.position = (x, y)
+        self.position_ = (x, y)
+
+    def position(self) -> tuple[int, int] | None:
+        return self.position_
 
     def press(self, button: str) -> None:
         self.events.append(("press", button))
