@@ -46,6 +46,15 @@ sudo usermod -aG input $USER       # poi rifai il login
 
 Al primo avvio il modello di MediaPipe (~8 MB) viene scaricato in `~/.cache/hand_controller/`.
 
+Collegamento sul desktop (Windows, Linux, macOS):
+```bash
+hand-controller --create-shortcut
+```
+
+Requisiti: webcam 640×480 a 30 fps, processore a 64 bit con AVX, circa 220 MB di RAM in uso.
+Tutti i dettagli (requisiti, installazione per sistema, sezione tecnica) sono nel manuale: pulsante
+**info** nell'overlay.
+
 ## Uso
 
 ```bash
@@ -117,3 +126,10 @@ altri esempi sono presenti ma disattivati.
 ```bash
 pytest
 ```
+
+## Crediti
+
+- **Volt**: idea, progettazione e prove sul campo.
+- **Claude** (Anthropic): sviluppo del codice insieme a Volt, con Claude Code.
+
+Hand Controller è disponibile su [pagefault.it](https://pagefault.it).

@@ -9,6 +9,7 @@ import time
 
 import numpy as np
 
+from . import __version__
 from .actions import ActionExecutor, describe_action
 from .audio import ClapListener
 from .capture import backend_order, open_camera
@@ -496,6 +497,9 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--dry-run", action="store_true", help="non genera input reale (solo overlay)")
     ap.add_argument("--list-cameras", action="store_true", help="elenca le webcam disponibili")
     ap.add_argument("--settings", action="store_true", help="apre solo la finestra di configurazione")
+    ap.add_argument("--create-shortcut", action="store_true",
+                    help="crea un collegamento sul desktop per avviare l'app")
+    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = ap.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):   # accenti corretti anche nelle console Windows
         try:
@@ -505,6 +509,10 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.list_cameras:
         list_cameras()
+        return
+    if args.create_shortcut:
+        from .shortcut import create_shortcut
+        print(f"Collegamento creato: {create_shortcut()}")
         return
     if args.settings:
         from .config_ui import main as settings_main

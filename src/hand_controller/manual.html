@@ -187,6 +187,26 @@ details p { margin: 10px 0 4px 26px; }
 
 code { font: 14px/1.4 Consolas, "Cascadia Mono", monospace; background: var(--paper-2); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--rule); word-break: break-all; }
 
+pre {
+  font: 13.5px/1.55 Consolas, "Cascadia Mono", monospace; background: var(--scope); color: #E9EEF2;
+  padding: 14px 16px; border-radius: 8px; overflow-x: auto; margin: 10px 0 18px; max-width: 72ch;
+}
+pre .c { color: #8E9AA6; }
+main section > pre.wide { max-width: 100%; }
+.os > div { min-width: 0; max-width: 72ch; }
+.os h3 { margin-top: 22px; }
+td.yes { color: var(--pad); font-weight: 600; }
+td.no { color: var(--muted); }
+.tech dt { font: 600 16px/1.3 var(--display); margin-top: 18px; }
+.tech dd { margin: 4px 0 0; color: var(--ink); }
+.credits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.credit { padding: 18px; border-radius: 8px; background: var(--scope); color: #E9EEF2; }
+.credit b { display: block; font: 700 28px/1.1 var(--display); color: #fff; margin-bottom: 6px; }
+.credit span { color: #C7D0D8; font-size: 15px; }
+.site { color: var(--landmark); font: 600 15px/1 var(--display); text-decoration: none; }
+.site:hover { text-decoration: underline; }
+@media (max-width: 900px) { .credits { grid-template-columns: 1fr; } }
+
 footer { border-top: 1px solid var(--rule); padding: 24px clamp(16px, 4vw, 48px); color: var(--muted); font-size: 14px; }
 footer div { max-width: 1180px; margin: 0 auto; }
 
@@ -212,6 +232,7 @@ footer div { max-width: 1180px; margin: 0 auto; }
       <h1>Hand<span>Controller</span></h1>
       <p class="lede">Usa il PC con le mani davanti alla webcam: <strong>un mouse</strong> sul desktop, <strong>un controller Xbox</strong> nei giochi.</p>
       <div class="chips" id="chips" role="group" aria-label="Mostra un gesto"></div>
+      <p style="margin:22px 0 0"><a class="site" href="https://pagefault.it" target="_blank" rel="noopener">pagefault.it</a></p>
     </div>
     <div class="viewport">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
@@ -233,6 +254,10 @@ footer div { max-width: 1180px; margin: 0 auto; }
       <li><a href="#config">Configurazione</a></li>
       <li><a href="#consigli">Consigli e problemi</a></li>
       <li><a href="#come">Come funziona</a></li>
+      <li><a href="#installazione">Installazione</a></li>
+      <li><a href="#sistemi">Sistemi supportati</a></li>
+      <li><a href="#tecnici">Per i tecnici</a></li>
+      <li><a href="#crediti">Crediti</a></li>
     </ol>
   </nav>
 
@@ -362,6 +387,189 @@ footer div { max-width: 1180px; margin: 0 auto; }
         <div><b>Gesti</b><span>Distanze e angoli diventano pinch, pugno e pose.</span></div>
         <div><b>Input</b><span>Mouse e controller Xbox virtuali, visti dal PC come quelli veri.</span></div>
       </div>
+    </section>
+
+    <section id="installazione">
+      <h2>Installazione</h2>
+      <h3>Requisiti</h3>
+      <table><tbody>
+        <tr><td class="what">Webcam</td><td>Qualsiasi webcam USB o integrata, 640×480 a 30 fotogrammi al secondo. Una Logitech C270 è più che sufficiente.</td></tr>
+        <tr><td class="what">Microfono</td><td>Facoltativo, serve solo per battiti e schiocchi. Va bene quello della webcam.</td></tr>
+        <tr><td class="what">Processore</td><td>64 bit con istruzioni AVX (quasi tutti i processori dal 2013). Il tracciamento usa circa due terzi di un core.</td></tr>
+        <tr><td class="what">Memoria</td><td>Circa 220 MB mentre l'app è in funzione; 4 GB di RAM nel PC bastano.</td></tr>
+        <tr><td class="what">Python</td><td>Versione 3.9, 3.10, 3.11 o 3.12 (provato con la 3.11), 64 bit.</td></tr>
+        <tr><td class="what">Spazio su disco</td><td>Circa 600 MB per l'ambiente Python con le librerie, più 8 MB per il modello della mano scaricato al primo avvio.</td></tr>
+        <tr><td class="what">Internet</td><td>Solo all'installazione e al primo avvio (download del modello). Poi funziona offline.</td></tr>
+      </tbody></table>
+
+      <h3>Procedura</h3>
+      <div class="os wide">
+        <div>
+          <h3>Windows 10 e 11</h3>
+<pre><span class="c"># nella cartella del progetto</span>
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[windows]"
+hand-controller --create-shortcut</pre>
+          <p>L'installazione di <code>vgamepad</code> avvia anche quella del driver ViGEmBus, che crea il controller Xbox virtuale: Windows chiede la conferma da amministratore.</p>
+        </div>
+        <div>
+          <h3>Linux</h3>
+<pre>python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[linux]"
+sudo modprobe uinput
+echo 'KERNEL=="uinput", GROUP="input", MODE="0660"' \
+  | sudo tee /etc/udev/rules.d/99-uinput.rules
+sudo usermod -aG input $USER
+sudo apt install xdotool libportaudio2
+hand-controller --create-shortcut</pre>
+          <p>Dopo <code>usermod</code> esci e rientra nella sessione. Serve una sessione X11: su Wayland mouse virtuale e rilevamento del gioco in primo piano non sono disponibili.</p>
+        </div>
+        <div>
+          <h3>macOS</h3>
+<pre>python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+hand-controller --create-shortcut</pre>
+          <p>Al primo avvio concedi al Terminale i permessi per Fotocamera, Microfono e Accessibilità (Impostazioni di Sistema › Privacy e sicurezza). Il controller virtuale non è disponibile: su macOS funziona solo il mouse.</p>
+        </div>
+      </div>
+
+      <h3>Collegamento sul desktop</h3>
+      <p><code>hand-controller --create-shortcut</code> crea il collegamento per il sistema in uso:</p>
+      <table><tbody>
+        <tr><td class="what">Windows</td><td><code>Hand Controller.lnk</code> sul desktop (anche se il desktop è in OneDrive); la finestra della console parte ridotta a icona.</td></tr>
+        <tr><td class="what">Linux</td><td><code>hand-controller.desktop</code> sul desktop e nel menu delle applicazioni.</td></tr>
+        <tr><td class="what">macOS</td><td><code>Hand Controller.command</code> sul desktop.</td></tr>
+      </tbody></table>
+
+      <h3>Comandi</h3>
+      <table><tbody>
+        <tr><td><code>hand-controller</code></td><td>Avvio normale</td></tr>
+        <tr><td><code>--dry-run</code></td><td>Solo overlay, nessun input reale: per fare prove</td></tr>
+        <tr><td><code>--settings</code></td><td>Apre solo la finestra di configurazione</td></tr>
+        <tr><td><code>--config profilo.yaml</code></td><td>Usa un profilo in aggiunta alle tue impostazioni</td></tr>
+        <tr><td><code>--camera N</code> · <code>--mode gamepad</code></td><td>Sceglie webcam e modalità iniziale</td></tr>
+        <tr><td><code>--no-overlay</code></td><td>Senza finestrella (chiusura con <kbd>Ctrl</kbd> + <kbd>F10</kbd>)</td></tr>
+        <tr><td><code>--list-cameras</code></td><td>Elenca le webcam disponibili</td></tr>
+        <tr><td><code>--create-shortcut</code> · <code>--version</code></td><td>Collegamento sul desktop, versione</td></tr>
+      </tbody></table>
+
+      <h3>Aggiornare e disinstallare</h3>
+      <p>Per aggiornare sostituisci i file del progetto con la nuova versione e ripeti <code>pip install -e .</code> con l'opzione del tuo sistema (per esempio <code>.[windows]</code>). Le tue impostazioni restano. Per disinstallare cancella la cartella del progetto, il collegamento e, se vuoi, le impostazioni in <code id="cfgPath2">%APPDATA%\hand-controller</code> e il modello in <code>~/.cache/hand_controller</code>. Su Windows il driver ViGEmBus si rimuove da Impostazioni › App.</p>
+    </section>
+
+    <section id="sistemi">
+      <h2>Sistemi supportati</h2>
+      <table class="wide">
+        <thead><tr><th>Funzione</th><th>Windows 10 / 11</th><th>Linux (X11)</th><th>macOS</th></tr></thead>
+        <tbody>
+          <tr><td class="what">Tracciamento delle mani e overlay</td><td class="yes">Sì</td><td class="yes">Sì</td><td class="yes">Sì</td></tr>
+          <tr><td class="what">Mouse virtuale</td><td class="yes">Sì</td><td class="yes">Sì</td><td class="yes">Sì, con permesso Accessibilità</td></tr>
+          <tr><td class="what">Controller Xbox virtuale</td><td class="yes">Sì, driver ViGEmBus</td><td class="yes">Sì, uinput</td><td class="no">No</td></tr>
+          <tr><td class="what">Cambio automatico col gioco in primo piano</td><td class="yes">Sì</td><td class="yes">Sì, con xdotool</td><td class="yes">Sì</td></tr>
+          <tr><td class="what">Battiti e schiocchi</td><td class="yes">Sì</td><td class="yes">Sì, con PortAudio</td><td class="yes">Sì, con permesso Microfono</td></tr>
+          <tr><td class="what">Tasti rapidi globali e tasti dai gesti</td><td class="yes">Sì</td><td class="yes">Sì</td><td class="yes">Sì, con permesso Accessibilità</td></tr>
+          <tr><td class="what">Script e comandi personali</td><td class="yes">Sì</td><td class="yes">Sì</td><td class="yes">Sì</td></tr>
+          <tr><td class="what">Collegamento sul desktop</td><td class="yes">Sì</td><td class="yes">Sì</td><td class="yes">Sì</td></tr>
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:14px">Windows è il sistema su cui l'app è sviluppata e provata ogni giorno. Linux e macOS sono supportati dal codice ma provati meno: segnala eventuali problemi.</p>
+    </section>
+
+    <section id="tecnici">
+      <h2>Per i tecnici</h2>
+      <p>Hand Controller è un'applicazione Python. La logica è indipendente dal sistema operativo; solo i moduli in <code>backends/</code>, <code>desktop/</code> e piccole parti di avvio contengono codice specifico.</p>
+
+      <h3>Il ciclo di un fotogramma</h3>
+<pre class="wide">webcam ─► capture (thread) ─► MediaPipe Hand Landmarker (21 punti × 2 mani)
+       ─► filtro One Euro ─► gestures (pinch, chiusura, dita tese, pose)
+       ─► gesti personalizzati + ascolto audio ─► mouse_mode | gamepad_mode
+       ─► backends (pynput · vgamepad/ViGEmBus · uinput) ─► overlay</pre>
+
+      <dl class="tech">
+        <dt>Acquisizione video</dt>
+        <dd>OpenCV su un thread dedicato: il ciclo principale prende sempre l'ultimo fotogramma, senza accumulare ritardo. Su Windows usa Media Foundation (circa 30 fps) con le trasformazioni hardware disattivate (<code>OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS=0</code>), che altrimenti rallentano l'apertura fino a 30 secondi; se la webcam non manda immagini per 1,5 secondi la riapre alternando Media Foundation e DirectShow. Formato MJPG, buffer di un fotogramma.</dd>
+
+        <dt>Tracciamento</dt>
+        <dd>MediaPipe Tasks, modello <code>hand_landmarker.task</code> (float16, circa 8 MB) in modalità VIDEO, fino a 2 mani, 21 punti per mano con coordinate normalizzate. Gira sulla CPU con XNNPACK. Il modello viene scaricato al primo avvio in <code>~/.cache/hand_controller/</code>.</dd>
+
+        <dt>Filtro anti-tremolio</dt>
+        <dd>One Euro Filter (Casiez et al., 2012) vettoriale sui 21 punti: frequenza di taglio minima 1,2 Hz, beta 8. Un secondo One Euro filtra la posizione del cursore (0,8 Hz, beta 4), necessario perché l'area di movimento è piccola e ogni pixel della webcam vale circa 25 pixel di schermo.</dd>
+
+        <dt>Riconoscimento dei gesti</dt>
+        <dd>Tutte le misure sono divise per la «dimensione della mano» (distanza polso–nocca del medio), così valgono a qualsiasi distanza dalla webcam. Pinch: distanza pollice–polpastrello con isteresi (scatta sotto 0,30, si rilascia sopra 0,42). Chiusura: rapporto medio punte–polso tra mano aperta (1,75) e pugno (1,10). Dito teso: punta più lontana dal polso del 15% rispetto all'articolazione centrale. Pugno vero: quattro dita piegate. Le pose dei gesti personalizzati confrontano le dita tese con lo schema scelto, con 120 ms di tolleranza alle perdite brevi del tracciamento.</dd>
+
+        <dt>Mouse</dt>
+        <dd>Mappatura assoluta da un rettangolo largo <i>span</i> dimensioni-mano, con le proporzioni dello schermo, centrato dove si chiude il pugno. Il cursore resta fermo 150 ms dopo ogni pinch per non spostare il click. Su Windows il processo dichiara la consapevolezza DPI, così le coordinate coincidono con i pixel reali anche con lo scaling al 125–150%.</dd>
+
+        <dt>Controller virtuale</dt>
+        <dd>Ogni mano è uno stick con ancoraggio al punto d'ingresso, raggio in dimensioni-mano e zona morta radiale con riscalatura. Grilletti analogici dalla chiusura della mano. Windows: <code>vgamepad</code> sul driver ViGEmBus (Xbox 360). Linux: dispositivo <code>uinput</code> con gli stessi codici di un pad Xbox 360.</dd>
+
+        <dt>Audio</dt>
+        <dd>python-sounddevice (PortAudio), mono, blocchi da 10 ms. Il microfono si apre solo durante la finestra di ascolto. Un colpo è un blocco con picco ≥ −15 dBFS, salita ≥ 20 dB rispetto al blocco precedente e ≥ 25 dB sopra il rumore di fondo (stimato con una media mobile lenta), a non meno di 150 ms dal colpo precedente. Soglie tarate su registrazioni reali di battiti, schiocchi, tastiera, mouse e voce. L'audio non viene mai salvato.</dd>
+
+        <dt>Azioni</dt>
+        <dd>Tasti e combinazioni con pynput; comandi interni dell'app; pulsanti del controller fusi con lo stato prodotto dalle mani; programmi e script avviati in modo asincrono scegliendo l'interprete dall'estensione (<code>.py</code>, <code>.ps1</code>, <code>.bat</code>, <code>.vbs</code>…), con le variabili <code>HC_SOURCE</code>, <code>HC_NAME</code>, <code>HC_COUNT</code> e <code>HC_MODE</code>.</dd>
+
+        <dt>Configurazione</dt>
+        <dd>Tre livelli in YAML: default del pacchetto, impostazioni utente (solo le differenze, scritte in modo atomico) e profilo opzionale da riga di comando. L'app controlla la data di modifica del file ogni mezzo secondo e ricarica a caldo, riaprendo webcam o tracciamento solo se le relative impostazioni sono cambiate. La finestra di configurazione è un processo Tkinter separato.</dd>
+
+        <dt>Robustezza</dt>
+        <dd>Un mutex di sistema impedisce due istanze. La chiusura della console (o logout e spegnimento) viene intercettata per rilasciare webcam, microfono e controller prima di uscire: alcune webcam restano bloccate se il processo viene terminato a flusso aperto.</dd>
+
+        <dt>Manuale</dt>
+        <dd>Questa pagina è un unico file HTML senza risorse esterne. A ogni apertura l'app ci inserisce la configurazione attuale; la mano animata è disegnata in SVG con un modello pseudo-3D delle dita.</dd>
+      </dl>
+
+      <h3>File e cartelle</h3>
+      <table><tbody>
+        <tr><td><code id="cfgPath3">%APPDATA%\hand-controller\config.yaml</code></td><td>Le tue impostazioni (Linux: <code>~/.config/hand-controller/</code>; macOS: <code>~/Library/Application Support/hand-controller/</code>). Puoi spostarle con la variabile <code>HAND_CONTROLLER_CONFIG</code>.</td></tr>
+        <tr><td><code>manuale.html</code></td><td>Questo manuale, rigenerato a ogni apertura nella stessa cartella</td></tr>
+        <tr><td><code>~/.cache/hand_controller/</code></td><td>Modello di MediaPipe</td></tr>
+        <tr><td><code>src/hand_controller/default_config.yaml</code></td><td>Tutti i valori di default, commentati</td></tr>
+      </tbody></table>
+
+      <h3>Moduli</h3>
+      <table><tbody>
+        <tr><td><code>main.py</code></td><td>Avvio, ciclo principale, modalità, tasti rapidi, ricarica a caldo</td></tr>
+        <tr><td><code>capture.py</code> · <code>tracker.py</code> · <code>filters.py</code></td><td>Webcam, MediaPipe, filtro One Euro</td></tr>
+        <tr><td><code>gestures.py</code> · <code>custom_gestures.py</code></td><td>Misure della mano, pinch, pose e gesti personalizzati</td></tr>
+        <tr><td><code>mouse_mode.py</code> · <code>gamepad_mode.py</code></td><td>Dalla mano al cursore e al controller</td></tr>
+        <tr><td><code>audio.py</code></td><td>Finestra di ascolto e riconoscimento dei colpi</td></tr>
+        <tr><td><code>actions.py</code> · <code>launcher.py</code></td><td>Esecuzione delle azioni, avvio di programmi e script</td></tr>
+        <tr><td><code>backends/</code> · <code>desktop/</code></td><td>Mouse e controller per ogni sistema, programma in primo piano</td></tr>
+        <tr><td><code>config.py</code> · <code>config_ui.py</code></td><td>Impostazioni a livelli e finestra di configurazione</td></tr>
+        <tr><td><code>overlay.py</code> · <code>manual.py</code> · <code>shortcut.py</code></td><td>Finestrella, manuale, collegamento sul desktop</td></tr>
+      </tbody></table>
+
+      <h3>Librerie</h3>
+      <table><thead><tr><th>Libreria</th><th>Uso</th><th>Licenza</th></tr></thead><tbody>
+        <tr><td>MediaPipe (Google)</td><td>Tracciamento delle mani</td><td>Apache 2.0</td></tr>
+        <tr><td>OpenCV</td><td>Webcam e disegno dell'overlay</td><td>Apache 2.0</td></tr>
+        <tr><td>NumPy</td><td>Calcoli sui punti della mano</td><td>BSD</td></tr>
+        <tr><td>pynput</td><td>Mouse, tastiera e tasti rapidi</td><td>LGPL 3.0</td></tr>
+        <tr><td>vgamepad · ViGEmBus</td><td>Controller Xbox virtuale su Windows</td><td>MIT · BSD 3-Clause</td></tr>
+        <tr><td>python-evdev</td><td>Controller virtuale su Linux</td><td>BSD</td></tr>
+        <tr><td>python-sounddevice · PortAudio</td><td>Microfono</td><td>MIT</td></tr>
+        <tr><td>PyYAML</td><td>File di configurazione</td><td>MIT</td></tr>
+        <tr><td>Tkinter</td><td>Finestra di configurazione</td><td>PSF (inclusa in Python)</td></tr>
+        <tr><td>pytest</td><td>Test automatici</td><td>MIT</td></tr>
+      </tbody></table>
+
+      <h3>Sviluppo</h3>
+      <p>Installa anche gli strumenti di sviluppo con <code>pip install -e ".[windows,dev]"</code> e lancia i test con <code>pytest</code>: coprono gesti, mouse, gamepad, configurazione, audio, avvio degli script e manuale, senza bisogno di webcam. Per aggiungere un sistema operativo basta implementare <code>MouseBackend</code> e <code>GamepadBackend</code> in <code>backends/base.py</code>.</p>
+    </section>
+
+    <section id="crediti">
+      <h2>Crediti</h2>
+      <div class="credits wide">
+        <div class="credit"><b>Volt</b><span>Idea, progettazione e prove sul campo. Ha deciso come doveva sentirsi ogni gesto, dal pugno che centra il mouse all'indice alzato che mette in ascolto.</span></div>
+        <div class="credit"><b>Claude</b><span>Assistente AI di Anthropic. Ha scritto il codice insieme a Volt con Claude Code, una conversazione alla volta.</span></div>
+      </div>
+      <p>Grazie a chi sviluppa MediaPipe, OpenCV e le altre librerie open source elencate sopra: senza di loro questo progetto non esisterebbe.</p>
+      <p>Hand Controller è disponibile su <a class="site" href="https://pagefault.it" target="_blank" rel="noopener">pagefault.it</a>.</p>
     </section>
   </main>
 </div>
@@ -623,11 +831,14 @@ document.getElementById("clapTable").innerHTML = AU.enabled
   : '<tr><td colspan="2" class="muted">L\'ascolto è disattivato. Attivalo da Configurazione › Audio.</td></tr>';
 
 document.getElementById("cfgPath").textContent = D.configPath;
+document.getElementById("cfgPath3").textContent = D.configPath;
+document.getElementById("cfgPath2").textContent = D.configPath.replace(/[\\/][^\\/]+$/, "");
 document.getElementById("gamesLine").innerHTML = D.games.length
   ? D.games.map(g => `<span class="pill">${g.replace(/[<>&]/g, "")}</span>`).join(" ")
   : '<span class="muted">Nessun gioco nell\'elenco. Aggiungili da Configurazione › Generale.</span>';
-document.getElementById("footer").textContent =
-  `Hand Controller${D.version ? " " + D.version : ""}. Manuale generato con la tua configurazione attuale.`;
+document.getElementById("footer").innerHTML =
+  `Hand Controller${D.version ? " " + D.version : ""}, di Volt con Claude. Manuale generato con la tua configurazione attuale. ` +
+  `<a class="site" href="https://pagefault.it" target="_blank" rel="noopener">pagefault.it</a>`;
 
 /* ---------- indice: voce attiva ---------- */
 const links = [...document.querySelectorAll("nav.toc a")];
