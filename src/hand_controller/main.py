@@ -183,6 +183,13 @@ class App:
                                              creationflags=flags)
         print("[app] finestra di configurazione aperta")
 
+    def open_manual(self) -> None:
+        from .manual import open_manual
+        try:
+            print(f"[app] manuale aperto: {open_manual(self.cfg)}")
+        except Exception as exc:
+            print(f"[app] impossibile aprire il manuale: {exc}")
+
     # ---- modalità -------------------------------------------------------------------------
     def set_mode(self, mode: str) -> None:
         if mode == self.mode:
@@ -236,16 +243,19 @@ class App:
 
         frame_id, fps, last_t = -1, 0.0, time.monotonic()
         window = "Hand Controller"
-        ui = {"hover": False, "click": False}
+        ui = {"hover": None, "click": None}
+        buttons = {"config": overlay.config_button_rect, "info": overlay.info_button_rect}
 
         def on_mouse(event, x, y, flags, param):
-            bx0, by0, bx1, by1 = overlay.config_button_rect(*param)
-            inside = bx0 <= x <= bx1 and by0 <= y <= by1
-            ui["hover"] = inside
-            if event == cv2.EVENT_LBUTTONUP and inside:
-                ui["click"] = True
+            ui["hover"] = None
+            for name, rect in buttons.items():
+                bx0, by0, bx1, by1 = rect(*param)
+                if bx0 <= x <= bx1 and by0 <= y <= by1:
+                    ui["hover"] = name
+                    if event == cv2.EVENT_LBUTTONUP:
+                        ui["click"] = name
 
-        print("[app] avviato. Overlay: q/ESC esci, m cambia modalità, p pausa, c configurazione, "
+        print("[app] avviato. Overlay: q/ESC esci, m cambia modalità, p pausa, c configurazione, i manuale, "
               f"+/- sensibilità mouse. Hotkey globali: {self.cfg['hotkeys']}")
         try:
             while not self.quit_requested:
@@ -294,7 +304,9 @@ class App:
                                        region, progress, self._fg_name, mouse_info,
                                        out_width=ocfg.get("width"),
                                        font_scale=ocfg.get("font_scale", 1.0),
-                                       gesture_name=gesture_name, config_hover=ui["hover"])
+                                       gesture_name=gesture_name,
+                                       config_hover=ui["hover"] == "config",
+                                       info_hover=ui["hover"] == "info")
                     if self.window_dirty:
                         overlay.create_window(window, ocfg, img.shape)
                         cv2.setMouseCallback(window, on_mouse, (img.shape[1], img.shape[0]))
@@ -303,15 +315,19 @@ class App:
                         break
                     cv2.imshow(window, img)
                     key = cv2.waitKey(1) & 0xFF
-                    if ui["click"]:
-                        ui["click"] = False
+                    if ui["click"] == "config":
                         self.open_config()
+                    elif ui["click"] == "info":
+                        self.open_manual()
+                    ui["click"] = None
                     if key in (27, ord("q")):
                         break
                     if key == ord("m"):
                         self._toggle_active_mode()
                     elif key == ord("c"):
                         self.open_config()
+                    elif key == ord("i"):
+                        self.open_manual()
                     elif key in (ord("+"), ord("=")):
                         # + = più sensibile = rettangolo più piccolo
                         print(f"[mouse] area {self.mouse_mapper.adjust_span(1 / 1.15):.2f} mani")

@@ -183,3 +183,18 @@ def test_gamepad_trigger_only_with_real_fist():
     v_sign = feat(ext={"index": True, "middle": True}, curl=0.8)
     assert m.update({"Right": v_sign}).rt == 0.0
     assert m.update({"Right": feat(curl=0.8)}).rt > 0.6          # pugno: analogico come prima
+
+
+def test_manual_is_built_with_current_config(tmp_path):
+    import json
+    from hand_controller.manual import PLACEHOLDER, build_manual
+    cfg = load_default_config()
+    cfg["custom_gestures"][0]["name"] = "Prova </script><b>x</b>"
+    out = build_manual(cfg, tmp_path / "m.html")
+    html = out.read_text(encoding="utf-8")
+    assert PLACEHOLDER not in html
+    assert "</script><b>" not in html                       # il nome non può chiudere lo script
+    raw = html.split("const DATA = ", 1)[1].split(";\n", 1)[0]
+    data = json.loads(raw.replace("<\/", "</"))
+    assert data["hotkeys"]["quit"] == "ctrl+f10"
+    assert data["gestures"][0]["action"] == "Cambia modalità mouse/gamepad"

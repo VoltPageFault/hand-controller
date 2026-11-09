@@ -28,7 +28,7 @@ hand-controller = "hand_controller.main:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-hand_controller = ["default_config.yaml"]
+hand_controller = ["default_config.yaml", "manual.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -438,6 +438,7 @@ class ConfigUI:
         ttk.Button(bar, text="Ripristina default", command=self.reset).pack(side="left")
         ttk.Button(bar, text="Importa…", command=self.import_profile).pack(side="left", padx=(8, 0))
         ttk.Button(bar, text="Esporta…", command=self.export_profile).pack(side="left", padx=4)
+        ttk.Button(bar, text="Manuale", command=self.open_manual).pack(side="left", padx=(4, 0))
         ttk.Button(bar, text="Chiudi", command=self.close).pack(side="right")
         ttk.Button(bar, text="OK", command=self.ok).pack(side="right", padx=4)
         ttk.Button(bar, text="Applica", command=self.apply).pack(side="right")
@@ -674,6 +675,14 @@ class ConfigUI:
             yaml.safe_dump(diff_config(load_default_config(), cfg), f, allow_unicode=True,
                            sort_keys=False)
         self._say(f"Esportato in {p}")
+
+    def open_manual(self):
+        from .manual import open_manual
+        try:
+            cfg = self.collect()
+        except ValueError:
+            cfg = self.cfg
+        open_manual(cfg)
 
     def close(self):
         try:

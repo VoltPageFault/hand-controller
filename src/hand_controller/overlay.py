@@ -66,19 +66,25 @@ def config_button_rect(w: int, h: int) -> tuple[int, int, int, int]:
     return w - bw - 4, h - bh - 4, w - 4, h - 4
 
 
-def _config_button(P: "_Painter", hover: bool) -> None:
-    x0, y0, x1, y1 = config_button_rect(P.w, P.h)
+def info_button_rect(w: int, h: int) -> tuple[int, int, int, int]:
+    """Pulsante "info" (manuale), subito a sinistra di "config"."""
+    x0, y0, _, y1 = config_button_rect(w, h)
+    return x0 - 46, y0, x0 - 4, y1
+
+
+def _button(P: "_Painter", rect, label: str, hover: bool) -> None:
+    x0, y0, x1, y1 = rect
     fill = (90, 90, 90) if hover else (45, 45, 45)
     cv2.rectangle(P.img, (x0, y0), (x1, y1), fill, -1)
     cv2.rectangle(P.img, (x0, y0), (x1, y1), (230, 230, 230) if hover else (160, 160, 160), 1)
-    P.text("config", ((x0 + x1) // 2, y1 - 6), (255, 255, 255), size=0.45, align="center")
+    P.text(label, ((x0 + x1) // 2, y1 - 6), (255, 255, 255), size=0.45, align="center")
 
 
 def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], mode: str,
          fps: float, pad: PadState | None, mouse_region, switch_progress: float,
          foreground: str | None, mouse_info: str | None = None,
          out_width: int | None = None, font_scale: float = 1.0, gesture_name: str = "",
-         config_hover: bool = False) -> np.ndarray:
+         config_hover: bool = False, info_hover: bool = False) -> np.ndarray:
     if out_width and out_width != frame.shape[1]:
         out_h = int(round(frame.shape[0] * out_width / frame.shape[1]))
         img = cv2.resize(frame, (out_width, out_h), interpolation=cv2.INTER_AREA)
@@ -121,7 +127,7 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
     if mode == "mouse" and mouse_info:
         P.text(mouse_info, (6, y + 8), mcolor, size=0.6, bold=True)
     if foreground and mode != "gamepad":
-        P.text(foreground[:22], (6, h - 8), (220, 220, 220), size=0.5)
+        P.text(foreground[:16], (6, h - 8), (220, 220, 220), size=0.5)
 
     if mode == "gamepad" and pad is not None:
         base = h - g(70) - 44   # spazio per il pulsante config
@@ -137,7 +143,8 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
         if pad.buttons:
             P.text(" ".join(sorted(pad.buttons)), (w // 2, base + g(32)), (0, 255, 0), size=0.75,
                    align="center", bold=True)
-    _config_button(P, config_hover)
+    _button(P, info_button_rect(w, h), "info", info_hover)
+    _button(P, config_button_rect(w, h), "config", config_hover)
     return img
 
 
