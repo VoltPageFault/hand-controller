@@ -140,6 +140,7 @@ class App:
 
         frame_id, fps, last_t = -1, 0.0, time.monotonic()
         window = "Hand Controller"
+        window_created = False
         print("[app] avviato. Overlay: q/ESC esci, m cambia modalità, p pausa, "
               "+/- sensibilità mouse. "
               f"Hotkey globali: {self.cfg['hotkeys']}")
@@ -180,11 +181,18 @@ class App:
                     mm = self.mouse_mapper
                     region, mouse_info = mm.current_region(), None
                     if mm.motion == "anchor":
-                        mouse_info = f"AREA {mm.span:.2f} mani" + (
-                            "  [CENTRO]" if mm.recentering else
-                            "" if region is not None else "  pugno = centra")
+                        mouse_info = f"area {mm.span:.2f}" + (
+                            "  CENTRO" if mm.recentering else
+                            "" if region is not None else "  pugno=centra")
                     img = overlay.draw(frame, hands, feats, self.mode, fps, self.pad_state,
-                                       region, progress, self._fg_name, mouse_info)
+                                       region, progress, self._fg_name, mouse_info,
+                                       out_width=self.cfg["overlay"].get("width"),
+                                       font_scale=self.cfg["overlay"].get("font_scale", 1.0))
+                    if not window_created:
+                        overlay.create_window(window, self.cfg["overlay"], img.shape)
+                        window_created = True
+                    elif overlay.window_closed(window):   # chiusa con la X: esci
+                        break
                     cv2.imshow(window, img)
                     key = cv2.waitKey(1) & 0xFF
                     if key in (27, ord("q")):

@@ -98,3 +98,8 @@ backend:
 
 overlay:
   enabled: true
+  position: bottom-right   # bottom-right | bottom-left | top-right | top-left
+  width: 320               # larghezza in pixel (l'altezza segue le proporzioni della webcam)
+  font_scale: 1.0          # grandezza delle scritte (1.5 = più grandi)
+  margin: 12               # distanza dai bordi dello schermo / barra delle applicazioni
+  always_on_top: false     # true = sempre sopra le altre finestre
