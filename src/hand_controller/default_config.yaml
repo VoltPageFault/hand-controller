@@ -8,6 +8,7 @@ camera:
   fps: 30
   mirror: true        # vista "a specchio" (consigliato: i movimenti risultano naturali)
   exposure: null      # null = automatica; es. -6 (DirectShow) per fissarla e tenere 30 fps
+  backend: auto       # auto (Media Foundation, riserva DirectShow) | msmf | dshow
 
 tracking:
   max_hands: 2

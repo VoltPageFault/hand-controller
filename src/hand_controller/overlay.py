@@ -117,7 +117,8 @@ def draw(frame: np.ndarray, hands: list[Hand], feats: dict[str, HandFeatures], m
 
     # riga in alto: modalità a sinistra, fps a destra
     th = P.text(mode.upper(), (6, 24), MODE_COLORS.get(mode, (255, 255, 255)), size=0.75, bold=True)
-    P.text(f"{fps:.0f} fps", (w - 6, 24), size=0.55, align="right")
+    if fps > 0:                      # 0 = prima misura non ancora pronta (dopo 5 s)
+        P.text(f"{fps:.0f} fps", (w - 6, 24), size=0.55, align="right")
     y = 24 + th + 12
     if switch_progress > 0:
         cv2.rectangle(img, (6, y - 6), (6 + int((w // 2) * switch_progress), y), (0, 255, 255), -1)

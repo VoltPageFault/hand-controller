@@ -293,6 +293,15 @@ footer div { max-width: 1180px; margin: 0 auto; }
       <p>Una posa della mano tenuta per un attimo esegue un'azione: cambiare modalità, premere una combinazione di tasti, un pulsante del controller o avviare un programma. Mentre tieni la posa, nell'overlay si riempie una barra gialla col nome del gesto.</p>
       <h3>I tuoi gesti</h3>
       <div class="gestures wide" id="gestureList"></div>
+      <h3>I tuoi script e programmi</h3>
+      <p>Ogni gesto e ogni numero di colpi può avviare qualsiasi cosa: un programma, un gioco, uno script tuo (<code>.py</code>, <code>.ps1</code>, <code>.bat</code>, <code>.vbs</code>), un collegamento, un link come <code>steam://rungameid/…</code> oppure una riga di comando completa. Il pulsante <b>Prova</b> nella configurazione lo avvia subito per verificarlo.</p>
+      <p>Lo script riceve alcune variabili d'ambiente, così un solo script può comportarsi in modo diverso a seconda di cosa l'ha avviato:</p>
+      <table><tbody>
+        <tr><td><code>HC_SOURCE</code></td><td><code>gesto</code> oppure <code>audio</code></td></tr>
+        <tr><td><code>HC_NAME</code></td><td>Nome del gesto, oppure «2 colpi»</td></tr>
+        <tr><td><code>HC_COUNT</code></td><td>Numero di colpi (solo audio)</td></tr>
+        <tr><td><code>HC_MODE</code></td><td><code>mouse</code>, <code>gamepad</code> o <code>paused</code></td></tr>
+      </tbody></table>
       <p class="muted" style="margin-top:16px">Le pose valgono solo senza pinch attivi. Una posa con tutte le dita piegate assomiglia al pugno, che centra il mouse e preme il grilletto: meglio lasciare almeno un dito teso.</p>
     </section>
 

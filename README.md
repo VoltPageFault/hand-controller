@@ -96,6 +96,13 @@ schiocca le dita: 1, 2 o 3 colpi eseguono tre azioni diverse (default: play/paus
 modalità, pausa). Fuori da quella finestra il microfono è spento; l'audio non viene mai salvato.
 Tutto si regola in Configurazione › Audio, con il pulsante "Prova microfono".
 
+### Script e programmi personali
+
+Gesti e colpi possono avviare qualsiasi programma o script (`.exe`, `.py`, `.ps1`, `.bat`, `.vbs`,
+collegamenti, link `steam://` o `https://`) con argomenti, oppure una riga di comando completa
+(azione "Comando"). Lo script riceve le variabili d'ambiente `HC_SOURCE` (gesto | audio),
+`HC_NAME`, `HC_COUNT` e `HC_MODE`. In configurazione, "Prova" avvia subito l'azione.
+
 ### Gesti personalizzati
 
 Una posa della mano (ogni dito teso / piegato / indifferente) tenuta per un certo tempo esegue

@@ -7,13 +7,14 @@ Un'azione è un dizionario ``{"type": ..., "value": ...}``:
 - ``key``   : tasto o combinazione, es. ``alt+tab``, ``ctrl+shift+esc``, ``win+d``, ``media_volume_up``
 - ``mouse`` : left | right | middle | double
 - ``pad``   : pulsante del controller (A, B, X, Y, LB, RB, LT, RT, BACK, START, LS, RS, DPAD_UP, ...)
-- ``run``   : riga di comando da avviare (es. ``notepad.exe`` o ``"C:\\Giochi\\gioco.exe"``)
+- ``run``   : programma o script con argomenti (es. ``C:\\Script\\luci.py --on``), vedi launcher.py
+- ``shell`` : riga di comando completa per cmd/sh (es. ``start ms-settings:sound``)
+
+Per run/shell la chiave opzionale ``hidden: true`` nasconde la finestra della console.
 """
 from __future__ import annotations
 
-import shlex
-import subprocess
-import sys
+from pathlib import Path
 from typing import Callable
 
 from .backends import BUTTONS, TRIGGERS, MouseBackend, PadState
@@ -32,7 +33,8 @@ MOUSE_ACTIONS = {"left": "Click sinistro", "right": "Click destro", "middle": "C
                  "double": "Doppio click"}
 PAD_ACTIONS = tuple(BUTTONS) + tuple(TRIGGERS)
 ACTION_TYPES = {"app": "Comando dell'app", "key": "Tasto / combinazione", "mouse": "Mouse",
-                "pad": "Pulsante gamepad", "run": "Avvia programma"}
+                "pad": "Pulsante gamepad", "run": "Programma o script",
+                "shell": "Comando (riga di comando)"}
 
 KEY_ALIASES = {"win": "cmd", "windows": "cmd", "control": "ctrl", "escape": "esc",
                "return": "enter", "canc": "delete", "del": "delete", "pgup": "page_up",
@@ -83,8 +85,15 @@ def validate_action(action: dict) -> str | None:
             parse_keys(v or "")
         except ValueError as exc:
             return str(exc)
-    if t == "run" and not str(v or "").strip():
-        return "manca il comando da avviare"
+    if t in ("run", "shell"):
+        if not str(v or "").strip():
+            return "manca il comando da avviare"
+        if t == "run":
+            from .launcher import build_launch
+            try:
+                build_launch(action)
+            except ValueError as exc:
+                return str(exc)
     return None
 
 
@@ -99,7 +108,15 @@ def describe_action(action: dict) -> str:
     if t == "key":
         return KEY_LABELS.get(str(v).lower(), f"Tasti {v}")
     if t == "run":
-        return f"Avvia {v}"
+        from .launcher import split_command_line
+        try:
+            name = Path(split_command_line(str(v))[0]).name
+        except (ValueError, IndexError):
+            name = str(v)
+        return f"Avvia {name or v}"
+    if t == "shell":
+        s = str(v)
+        return "Comando: " + (s if len(s) <= 40 else s[:39] + "…")
     return "—"
 
 
@@ -109,8 +126,11 @@ class ActionExecutor:
     PAD_TAP_S = 0.12
 
     def __init__(self, mouse: MouseBackend, app_commands: dict[str, Callable[[], None]],
-                 dry_run: bool = False):
+                 dry_run: bool = False, notify: Callable[[str], None] | None = None,
+                 context: Callable[[], dict] | None = None):
         self.mouse = mouse
+        self.notify = notify or (lambda msg: print(f"[azioni] {msg}"))
+        self.context = context or (lambda: {})
         self.app_commands = app_commands
         self.dry_run = dry_run
         self._kb = None
@@ -129,7 +149,7 @@ class ActionExecutor:
         print(f"[gesto] {what}" + ("  (dry-run)" if self.dry_run else ""))
 
     # ---- azioni istantanee ---------------------------------------------------------------
-    def fire(self, action: dict, now: float) -> None:
+    def fire(self, action: dict, now: float, context: dict | None = None) -> None:
         t, v = action.get("type"), action.get("value")
         self._log(describe_action(action))
         if t == "app":
@@ -152,15 +172,14 @@ class ActionExecutor:
                 self.mouse.click("left")
             else:
                 self.mouse.click(v)
-        elif t == "run":
-            try:
-                args = v if sys.platform == "win32" else shlex.split(v)
-                subprocess.Popen(args, shell=False)
-            except Exception as exc:
-                print(f"[gesto] impossibile avviare {v!r}: {exc}")
+        elif t in ("run", "shell"):
+            from .launcher import launch
+            err = launch(action, {**self.context(), **(context or {})})
+            if err:
+                self.notify(err)
 
     # ---- azioni mantenute (finché il gesto è tenuto) -------------------------------------
-    def press(self, action: dict, now: float) -> None:
+    def press(self, action: dict, now: float, context: dict | None = None) -> None:
         t, v = action.get("type"), action.get("value")
         if t == "pad":
             self._log(f"{describe_action(action)} premuto")
@@ -177,7 +196,7 @@ class ActionExecutor:
             if not self.dry_run:
                 self.mouse.press(v)
         else:                                       # app / run / doppio click: istantanee
-            self.fire(action, now)
+            self.fire(action, now, context)
 
     def release(self, action: dict) -> None:
         t, v = action.get("type"), action.get("value")

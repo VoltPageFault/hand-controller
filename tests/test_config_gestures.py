@@ -84,13 +84,14 @@ class Recorder(ActionExecutor):
         super().__init__(NullMouseBackend(), {}, dry_run=True)
         self.log = []
 
-    def fire(self, action, now):
+    def fire(self, action, now, context=None):
         self.log.append(("fire", action["value"]))
-        super().fire(action, now)
+        self.contexts = getattr(self, "contexts", []) + [context]
+        super().fire(action, now, context)
 
-    def press(self, action, now):
+    def press(self, action, now, context=None):
         self.log.append(("press", action["value"]))
-        super().press(action, now)
+        super().press(action, now, context)
 
     def release(self, action):
         self.log.append(("release", action["value"]))

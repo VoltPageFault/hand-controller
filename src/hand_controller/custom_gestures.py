@@ -97,19 +97,23 @@ class GestureEngine:
                 if trigger == "hold":
                     if not st.pressed:
                         st.pressed = True
-                        self.executor.press(d["action"], now)
+                        self.executor.press(d["action"], now, self._ctx(d))
                 elif not st.fired:
                     st.fired = True
-                    self.executor.fire(d["action"], now)
+                    self.executor.fire(d["action"], now, self._ctx(d))
             elif progress > best[0]:
                 best = (progress, d.get("name", ""))
         return best
+
+    @staticmethod
+    def _ctx(d: dict) -> dict:
+        return {"source": "gesto", "name": d.get("name", "")}
 
     def _end(self, d: dict, st: _State, now: float | None = None) -> None:
         if st.pressed:
             self.executor.release(d["action"])
         if st.ready and now is not None:
-            self.executor.fire(d["action"], now)
+            self.executor.fire(d["action"], now, self._ctx(d))
         st.since, st.fired, st.pressed, st.ready = None, False, False, False
 
     def release_all(self) -> None:

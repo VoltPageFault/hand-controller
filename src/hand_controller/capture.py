@@ -9,16 +9,39 @@ import cv2
 import numpy as np
 
 
+BACKENDS = {"msmf": cv2.CAP_MSMF, "dshow": cv2.CAP_DSHOW, "any": cv2.CAP_ANY}
+
+
+def backend_order(preferred: str = "auto") -> list[str]:
+    """Ordine dei sistemi di acquisizione da provare. Su Windows Media Foundation è più fluido."""
+    if sys.platform != "win32":
+        return ["any"]
+    if preferred in ("msmf", "dshow"):
+        return [preferred, "dshow" if preferred == "msmf" else "msmf"]
+    return ["msmf", "dshow"]
+
+
+def open_camera(cam: dict, prefer: str | None = None) -> "Camera":
+    """Apre la webcam provando i sistemi di acquisizione in ordine (riserva se uno fallisce)."""
+    order = backend_order(prefer or cam.get("backend", "auto"))
+    last: Exception | None = None
+    for name in order:
+        try:
+            return Camera(cam["index"], cam["width"], cam["height"], cam["fps"], cam["mirror"],
+                          cam.get("exposure"), backend=name)
+        except RuntimeError as exc:
+            last = exc
+    raise last or RuntimeError("webcam non disponibile")
+
+
 class Camera:
     def __init__(self, index: int = 0, width: int = 640, height: int = 480, fps: int = 30,
-                 mirror: bool = True, exposure: float | None = None):
+                 mirror: bool = True, exposure: float | None = None, backend: str = "dshow"):
         self.mirror = mirror
-        api = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
-        self._cap = cv2.VideoCapture(index, api)
+        self.backend = backend if sys.platform == "win32" else "any"
+        self._cap = cv2.VideoCapture(index, BACKENDS.get(self.backend, cv2.CAP_ANY))
         if not self._cap.isOpened():
-            self._cap = cv2.VideoCapture(index)
-        if not self._cap.isOpened():
-            raise RuntimeError(f"Impossibile aprire la webcam con indice {index}")
+            raise RuntimeError(f"Impossibile aprire la webcam {index} ({self.backend})")
         self._cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)

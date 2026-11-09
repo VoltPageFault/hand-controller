@@ -11,6 +11,7 @@ import numpy as np
 
 from .actions import ActionExecutor, describe_action
 from .audio import ClapListener
+from .capture import backend_order, open_camera
 from .backends import NullGamepadBackend, PadState, create_gamepad, create_mouse
 from .backends.null import NullMouseBackend
 from .config import CONFIG_WINDOW_TITLE, config_stamp, load_config
@@ -69,15 +70,14 @@ class Hotkeys:
 
 class App:
     def __init__(self, cfg: dict, dry_run: bool = False, profile: str | None = None):
-        from .capture import Camera
         from .tracker import HandTracker
 
         self.cfg = cfg
         self.profile = profile
         self.dry_run = dry_run
         cam = cfg["camera"]
-        self.camera = Camera(cam["index"], cam["width"], cam["height"], cam["fps"], cam["mirror"],
-                             cam.get("exposure"))
+        self.camera = open_camera(cam)
+        print(f"[app] webcam aperta con {self.camera.backend}")
         self.tracker = HandTracker(cfg["tracking"], mirrored=cam["mirror"])
 
         if dry_run:
@@ -88,6 +88,7 @@ class App:
         print(f"[app] backend mouse={self.mouse.name} gamepad={self.gamepad.name}")
 
         self.quit_requested = False
+        self.closed = threading.Event()   # impostato a chiusura completata (webcam rilasciata)
         self.executor = ActionExecutor(self.mouse, {
             "toggle_mode": self._toggle_active_mode,
             "mouse_mode": lambda: self.set_mode("mouse"),
@@ -97,7 +98,8 @@ class App:
             "open_config": self.open_config,
             "quit": self._request_quit,
             "listen": self.start_listening,
-        }, dry_run=dry_run)
+        }, dry_run=dry_run, notify=lambda msg: self._notify(msg, 4.0),
+            context=lambda: {"mode": self.mode})
         self.listener: ClapListener | None = None
         self._cam_bad_since: float | None = None
         self._cam_retry = 0.0
@@ -129,7 +131,6 @@ class App:
     # ---- webcam che non risponde ------------------------------------------------------------
     def _camera_problem(self, now: float) -> bool:
         """Avvisa nell'overlay e riapre la webcam ogni pochi secondi. True se l'ha riaperta."""
-        from .capture import Camera
 
         if self._cam_bad_since is None:
             self._cam_bad_since = now
@@ -142,10 +143,14 @@ class App:
         self._cam_retry = now
         print("[app] la webcam non manda immagini: la riapro")
         c = self.cfg["camera"]
+        # alterna i sistemi di acquisizione: se uno si è bloccato, prova l'altro
+        order = backend_order(c.get("backend", "auto"))
+        cur = getattr(self.camera, "backend", order[0])
+        nxt = order[(order.index(cur) + 1) % len(order)] if cur in order else order[0]
         try:
             self.camera.close()
-            self.camera = Camera(c["index"], c["width"], c["height"], c["fps"], c["mirror"],
-                                 c.get("exposure"))
+            self.camera = open_camera(c, prefer=nxt)
+            print(f"[app] webcam riaperta con {self.camera.backend}")
         except Exception as exc:
             print(f"[app] riapertura non riuscita: {exc}")
         return True
@@ -175,7 +180,8 @@ class App:
         if action:
             self._notify(f"{count} colpi: {describe_action(action)}" if count > 1
                          else f"1 colpo: {describe_action(action)}")
-            self.executor.fire(action, now)
+            self.executor.fire(action, now, {"source": "audio", "count": count,
+                                             "name": f"{count} colpi"})
         else:
             self._notify(f"{count} colpi: nessuna azione assegnata")
 
@@ -197,7 +203,6 @@ class App:
         self.apply_config(new)
 
     def apply_config(self, new: dict) -> None:
-        from .capture import Camera
         from .tracker import HandTracker
 
         old = self.cfg
@@ -211,13 +216,10 @@ class App:
             cam = new["camera"]
             self.camera.close()
             try:
-                self.camera = Camera(cam["index"], cam["width"], cam["height"], cam["fps"],
-                                     cam["mirror"], cam.get("exposure"))
+                self.camera = open_camera(cam)
             except Exception as exc:
                 print(f"[config] webcam non disponibile ({exc}), torno alla precedente")
-                c = old["camera"]
-                self.camera = Camera(c["index"], c["width"], c["height"], c["fps"], c["mirror"],
-                                     c.get("exposure"))
+                self.camera = open_camera(old["camera"])
                 new["camera"] = old["camera"]
         if new["tracking"] != old["tracking"] or new["camera"]["mirror"] != old["camera"]["mirror"]:
             self.tracker.close()
@@ -306,6 +308,8 @@ class App:
         from . import overlay
 
         frame_id, fps, last_t = -1, 0.0, time.monotonic()
+        # fps mostrati: media degli ultimi 5 secondi, aggiornata solo ogni 5 secondi
+        fps_frames, fps_since = 0, last_t
         window = "Hand Controller"
         ui = {"hover": None, "click": None}
         buttons = {"config": overlay.config_button_rect, "info": overlay.info_button_rect}
@@ -334,7 +338,9 @@ class App:
                         frame = np.zeros((c["height"], c["width"], 3), np.uint8)
                 else:
                     self._cam_bad_since = None
-                fps = 0.9 * fps + 0.1 / max(now - last_t, 1e-6)
+                fps_frames += 1
+                if now - fps_since >= 5.0:
+                    fps, fps_frames, fps_since = fps_frames / (now - fps_since), 0, now
                 last_t = now
                 h, w = frame.shape[:2]
                 aspect = w / h
@@ -441,6 +447,27 @@ def list_cameras(max_index: int = 6) -> None:
         cap.release()
 
 
+def install_console_close_handler(app: "App") -> None:
+    """Chiudendo la console (X, logout, spegnimento) Windows termina il processo di colpo:
+    alcune webcam restano bloccate. Qui chiediamo all'app di uscire e aspettiamo che rilasci
+    webcam, microfono e controller (Windows concede circa 5 secondi)."""
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+    def handler(event):
+        if event in (0, 1):              # Ctrl+C / Ctrl+Break: gestiti come KeyboardInterrupt
+            return False
+        app.quit_requested = True        # chiusura console, logout, spegnimento
+        app.closed.wait(4.0)
+        return True
+
+    install_console_close_handler._ref = handler       # evita che venga liberato
+    ctypes.windll.kernel32.SetConsoleCtrlHandler(handler, True)
+
+
 def already_running() -> bool:
     """True se un'altra istanza è già aperta (Windows); in quel caso la porta in primo piano."""
     if sys.platform != "win32":
@@ -491,8 +518,10 @@ def main(argv: list[str] | None = None) -> None:
         cfg["camera"]["index"] = args.camera
     if args.mode:
         cfg["startup_mode"] = args.mode
-    App(cfg, dry_run=args.dry_run, profile=args.config).run(
-        show_overlay=not args.no_overlay and cfg["overlay"]["enabled"])
+    app = App(cfg, dry_run=args.dry_run, profile=args.config)
+    install_console_close_handler(app)
+    app.run(show_overlay=not args.no_overlay and cfg["overlay"]["enabled"])
+    app.closed.set()
 
 
 if __name__ == "__main__":

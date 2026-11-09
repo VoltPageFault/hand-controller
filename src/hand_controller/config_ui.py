@@ -498,6 +498,11 @@ class ConfigUI:
         self.num(t, ("camera", "width"), "Larghezza", 160, 1920, 160, integer=True)
         self.num(t, ("camera", "height"), "Altezza", 120, 1080, 120, integer=True)
         self.num(t, ("camera", "fps"), "Fotogrammi al secondo", 10, 60, 5, integer=True)
+        self.choice(t, ("camera", "backend"), "Sistema di acquisizione",
+                    {"auto": "Automatico (consigliato)", "msmf": "Media Foundation",
+                     "dshow": "DirectShow"},
+                    "Come Windows legge la webcam. Automatico usa Media Foundation (più fluido) e "
+                    "passa a DirectShow se la webcam non risponde.")
         self.check(t, ("camera", "mirror"), "Immagine a specchio",
                    "Consigliato: i movimenti risultano naturali.")
         self.num(t, ("camera", "exposure"), "Esposizione", -13, 0, 1,
@@ -797,48 +802,100 @@ class ConfigUI:
 
 
 # ---- scelta di un'azione (tipo + valore) ------------------------------------------------------
+HC_VARS_HELP = ("Lo script riceve queste variabili d'ambiente:\n"
+                "HC_SOURCE = gesto oppure audio\n"
+                "HC_NAME = nome del gesto (o «2 colpi»)\n"
+                "HC_COUNT = numero di colpi (solo audio)\n"
+                "HC_MODE = mouse, gamepad o paused")
+VALUE_HINTS = {
+    "key": "Es. alt+tab, ctrl+c, win+d, f5, space, enter, media_play_pause, media_volume_up.",
+    "pad": "Es. DPAD_UP/DOWN/LEFT/RIGHT per la croce direzionale, RB, RS, GUIDE.",
+    "run": "Programma o script con argomenti: .exe, .py, .ps1, .bat, .vbs, collegamenti .lnk, "
+           "oppure un link come steam://rungameid/123 o https://… Percorsi con spazi tra virgolette.",
+    "shell": "Riga di comando per cmd: es. start ms-settings:sound, taskkill /im gioco.exe, "
+             "echo %HC_NAME% >> C:\\log.txt",
+}
+
+
 class ActionField:
-    """Tipo di azione + valore, con "nessuna azione". get() -> dict | None."""
+    """Tipo di azione + valore (+ opzioni per programmi e comandi). get() -> dict | None."""
 
-    TYPES = {None: NONE, **ACTION_TYPES}
-
-    def __init__(self, parent):
+    def __init__(self, parent, allow_none: bool = True):
+        self.types = {None: NONE, **ACTION_TYPES} if allow_none else dict(ACTION_TYPES)
         self.frame = ttk.Frame(parent)
         self.type = tk.StringVar()
-        cb = ttk.Combobox(self.frame, textvariable=self.type, values=list(self.TYPES.values()),
-                          state="readonly", width=20)
-        cb.pack(side="left")
+        cb = ttk.Combobox(self.frame, textvariable=self.type, values=list(self.types.values()),
+                          state="readonly", width=24)
+        cb.grid(row=0, column=0, sticky="w")
         cb.bind("<<ComboboxSelected>>", lambda e: self._value_widget(""))
         self.value_box = ttk.Frame(self.frame)
-        self.value_box.pack(side="left", padx=6)
+        self.value_box.grid(row=0, column=1, sticky="w", padx=6)
+        self.extra = ttk.Frame(self.frame)
+        self.extra.grid(row=1, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        self.hint = ttk.Label(self.frame, style="Help.TLabel", wraplength=520, justify="left")
+        self.hint.grid(row=2, column=0, columnspan=2, sticky="w")
         self.value = tk.StringVar()
+        self.hidden = tk.BooleanVar(value=True)
         self._opts = None
 
     def _code(self):
-        return {v: k for k, v in self.TYPES.items()}.get(self.type.get())
+        return {v: k for k, v in self.types.items()}.get(self.type.get())
 
     def _value_widget(self, value):
-        for w in self.value_box.winfo_children():
-            w.destroy()
+        for box in (self.value_box, self.extra):
+            for w in box.winfo_children():
+                w.destroy()
         t = self._code()
         self._opts = {"app": APP_ACTIONS, "mouse": MOUSE_ACTIONS,
                       "pad": {b: b for b in PAD_ACTIONS}}.get(t)
+        self.hint.configure(text=VALUE_HINTS.get(t, ""))
         if t is None:
             return
         if self._opts:
             self.value.set(self._opts.get(value, next(iter(self._opts.values()))))
             ttk.Combobox(self.value_box, textvariable=self.value, values=list(self._opts.values()),
                          state="readonly", width=32).pack(side="left")
+            return
+        self.value.set(value or "")
+        width = 44 if t in ("run", "shell") else 30
+        ttk.Entry(self.value_box, textvariable=self.value, width=width).pack(side="left")
+        if t in ("run", "shell"):
+            if t == "run":
+                ttk.Button(self.extra, text="Sfoglia…", command=self._browse).pack(side="left")
+            cb = ttk.Checkbutton(self.extra, text="Nascondi la finestra della console",
+                                 variable=self.hidden)
+            cb.pack(side="left", padx=8)
+            Tooltip(cb, "Per script e comandi che non devono mostrare la finestra nera.")
+            ttk.Button(self.extra, text="Prova", command=self._try).pack(side="left")
+            info = ttk.Label(self.extra, text="variabili HC_*", style="Help.TLabel",
+                             cursor="question_arrow")
+            info.pack(side="left", padx=8)
+            Tooltip(info, HC_VARS_HELP)
+
+    def _browse(self):
+        p = filedialog.askopenfilename(
+            parent=self.frame.winfo_toplevel(), title="Scegli il programma o lo script",
+            filetypes=[("Programmi e script", "*.exe *.py *.pyw *.ps1 *.bat *.cmd *.vbs *.lnk"),
+                       ("Tutti i file", "*.*")])
+        if p:
+            p = p.replace("/", "\\") if sys.platform == "win32" else p
+            self.value.set(f'"{p}"' if " " in p else p)
+
+    def _try(self):
+        from .launcher import launch
+        action = self.get()
+        err = validate_action(action) or launch(action, {"source": "prova", "name": "Prova",
+                                                        "mode": "mouse"})
+        if err:
+            messagebox.showerror("Prova", err, parent=self.frame.winfo_toplevel())
         else:
-            self.value.set(value or "")
-            e = ttk.Entry(self.value_box, textvariable=self.value, width=30)
-            e.pack(side="left")
-            Tooltip(e, {"key": "Es. media_play_pause, alt+tab, win+d, f5, media_volume_up",
-                        "run": "Programma o comando da avviare"}.get(t, ""))
+            self.hint.configure(text="Avviato.")
 
     def set(self, action):
         action = action or {}
-        self.type.set(self.TYPES.get(action.get("type"), NONE))
+        first = next(iter(self.types.values()))
+        self.type.set(self.types.get(action.get("type"), first))
+        self.hidden.set(bool(action.get("hidden", True)))
         self._value_widget(action.get("value", ""))
 
     def get(self):
@@ -848,7 +905,10 @@ class ActionField:
         if self._opts:
             rev = {v: k for k, v in self._opts.items()}
             return {"type": t, "value": rev.get(self.value.get())}
-        return {"type": t, "value": self.value.get().strip()}
+        action = {"type": t, "value": self.value.get().strip()}
+        if t in ("run", "shell"):
+            action["hidden"] = bool(self.hidden.get())
+        return action
 
 
 # ---- editor di un gesto -----------------------------------------------------------------------
@@ -881,6 +941,11 @@ class GestureEditor:
         pc = ttk.Combobox(f, textvariable=self.preset, values=list(POSE_PRESETS), state="readonly",
                           width=34)
         pc.bind("<<ComboboxSelected>>", self._apply_preset)
+        cur = gesture.get("fingers", {})
+        for pname, preset in POSE_PRESETS.items():
+            if all(preset.get(k, "any") == cur.get(k, "any") for k in FINGERS):
+                self.preset.set(pname)
+                break
         row("Posa pronta", pc, "Scegli una posa per compilare le dita qui sotto.")
 
         fingers = ttk.Frame(f)
@@ -924,19 +989,9 @@ class GestureEditor:
 
         ttk.Separator(f).grid(row=r, column=0, columnspan=2, sticky="ew", pady=8)
         r += 1
-        action = gesture.get("action", {"type": "app", "value": "toggle_mode"})
-        self.atype = tk.StringVar(value=ACTION_TYPES.get(action.get("type"), ACTION_TYPES["app"]))
-        at = ttk.Combobox(f, textvariable=self.atype, values=list(ACTION_TYPES.values()),
-                          state="readonly", width=24)
-        at.bind("<<ComboboxSelected>>", lambda e: self._value_widget())
-        row("Azione", at)
-        self.value_frame = ttk.Frame(f)
-        row("Valore", self.value_frame)
-        self.hint = ttk.Label(f, style="Help.TLabel", wraplength=380, justify="left")
-        self.hint.grid(row=r, column=1, sticky="w")
-        r += 1
-        self.avalue = tk.StringVar(value=str(action.get("value", "")))
-        self._value_widget(initial=True)
+        self.action = ActionField(f, allow_none=False)
+        self.action.set(gesture.get("action", {"type": "app", "value": "toggle_mode"}))
+        row("Azione", self.action.frame)
 
         b = ttk.Frame(f)
         b.grid(row=r, column=0, columnspan=2, sticky="e", pady=(12, 0))
@@ -944,53 +999,8 @@ class GestureEditor:
         ttk.Button(b, text="OK", command=self._ok).pack(side="right", padx=6)
         win.grab_set()
 
-    def _type_code(self) -> str:
-        return {v: k for k, v in ACTION_TYPES.items()}[self.atype.get()]
-
-    def _value_widget(self, initial=False):
-        for w in self.value_frame.winfo_children():
-            w.destroy()
-        t = self._type_code()
-        options = {"app": APP_ACTIONS, "mouse": MOUSE_ACTIONS,
-                   "pad": {b: b for b in PAD_ACTIONS}}.get(t)
-        if options:
-            self._opt_map = options
-            cur = self.avalue.get()
-            disp = tk.StringVar(value=options.get(cur, next(iter(options.values()))))
-            cb = ttk.Combobox(self.value_frame, textvariable=disp, values=list(options.values()),
-                              state="readonly", width=30)
-            cb.pack(side="left")
-            self._disp = disp
-        else:
-            self._opt_map = None
-            if not initial:
-                self.avalue.set("")
-            ttk.Entry(self.value_frame, textvariable=self.avalue, width=34).pack(side="left")
-            if t == "run":
-                ttk.Button(self.value_frame, text="Sfoglia…", command=self._browse).pack(
-                    side="left", padx=4)
-        self.hint.configure(text={
-            "key": "Es. alt+tab, ctrl+c, win+d, f5, space, enter, media_play_pause, "
-                   "media_volume_up, media_volume_down, media_next.",
-            "pad": "Es. DPAD_UP/DOWN/LEFT/RIGHT per la croce direzionale, RB, RS, GUIDE.",
-            "run": "Programma o comando da avviare.",
-            "app": "", "mouse": ""}.get(t, ""))
-
-    def _browse(self):
-        p = filedialog.askopenfilename(parent=self.win, title="Scegli il programma",
-                                       filetypes=[("Programmi", "*.exe *.bat *.cmd *.lnk"),
-                                                  ("Tutti", "*.*")])
-        if p:
-            self.avalue.set(f'"{p}"' if " " in p else p)
-
     def _ok(self):
-        t = self._type_code()
-        if self._opt_map:
-            rev = {v: k for k, v in self._opt_map.items()}
-            value = rev[self._disp.get()]
-        else:
-            value = self.avalue.get().strip()
-        action = {"type": t, "value": value}
+        action = self.action.get()
         err = validate_action(action)
         fingers = {k: v.get() for k, v in self.finger_vars.items()}
         try:
