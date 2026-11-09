@@ -521,7 +521,8 @@ class ConfigUI:
         self.num(t, ("overlay", "font_scale"), "Grandezza scritte", 0.6, 2.5, 0.1)
         self.num(t, ("overlay", "margin"), "Distanza dai bordi (pixel)", 0, 200, 2, integer=True)
         self.check(t, ("overlay", "always_on_top"), "Sempre in primo piano",
-                   "Resta sopra le altre finestre.")
+                   "Resta sopra le altre finestre, anche sopra i giochi in finestra o a schermo "
+                   "intero senza bordi.")
 
     def _buttons(self):
         bar = ttk.Frame(self.root, padding=(8, 4, 8, 8))

@@ -191,8 +191,8 @@ def create_window(name: str, cfg: dict, frame_shape: tuple[int, ...]) -> None:
     height = int(round(width * h / w))
     cv2.namedWindow(name, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.resizeWindow(name, width, height)
-    if cfg.get("always_on_top", False):
-        cv2.setWindowProperty(name, cv2.WND_PROP_TOPMOST, 1)
+    # impostato sempre (anche a 0): così disattivarlo dalla configurazione ha effetto subito
+    cv2.setWindowProperty(name, cv2.WND_PROP_TOPMOST, 1 if cfg.get("always_on_top", True) else 0)
 
     corner = cfg.get("position", "bottom-right")
     margin = int(cfg.get("margin", 12))
